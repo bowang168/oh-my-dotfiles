@@ -29,6 +29,8 @@ brew "ripgrep"
 brew "sevenzip"
 # Cross-shell prompt for astronauts
 brew "starship"
+# Open source continuous file synchronization
+brew "syncthing"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
 # Blazing fast terminal file manager written in Rust, based on async I/O
