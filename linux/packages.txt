@@ -1,0 +1,30 @@
+# Oracle Linux 9 — packages to install
+# Usage: sudo dnf install $(grep -v '^#' packages.txt | tr '\n' ' ')
+
+# Shell & terminal
+zsh
+kitty
+
+# CLI tools
+bat
+eza
+fd-find
+fzf
+git
+git-delta
+neovim
+ripgrep
+starship
+tree
+zoxide
+
+# System utilities
+htop
+tmux
+
+# Window management (for toggle_app)
+xdotool
+wmctrl
+
+# Key remapping
+# keyd — build from source, see docs/ol9-shortcuts.md

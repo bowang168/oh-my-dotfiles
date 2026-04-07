@@ -1,0 +1,5 @@
+Found 1 keys in domain 'abnerworks.Typora': {
+    NSUserKeyEquivalents =     {
+        "Always on Top" = "@$p";
+    };
+}

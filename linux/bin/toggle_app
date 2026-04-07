@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# MIT License - Copyright (c) 2025 Bo Wang
+
+# Toggle and focus a target application window.
+# Launches it if not running; minimizes it if already focused.
+# Usage: toggle_app <WM_CLASS or command>
+# Example: toggle_app gnome-terminal
+# Dependencies: xdotool, wmctrl
+
+set -euo pipefail
+
+# Target application (WM_CLASS or launch command). Defaults to gnome-terminal.
+my_term=${1:-gnome-terminal}
+
+# Track whether the app was just launched
+was_just_launched=false
+
+# Find window IDs matching the target application (ignore errors if none found)
+window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
+
+# If no matching windows, try to launch the application
+if [[ -z "$window_ids" ]]; then
+    was_just_launched=true
+    nohup "$my_term" >/dev/null 2>&1 &
+    # Wait briefly for the window to appear
+    for i in 1 2 3 4 5; do
+        sleep 0.2
+        window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
+        [[ -n "$window_ids" ]] && break
+    done
+fi
+
+# If just launched, focus the new window and exit
+if [[ "$was_just_launched" == true ]]; then
+    # Allow time for the window to fully load
+    sleep 0.3
+    # Focus the first matching window
+    first_id=$(printf '%s\n' "$window_ids" | head -n1)
+    if [[ -n "$first_id" ]]; then
+        xdotool windowactivate "$first_id"
+    fi
+    exit 0
+fi
+
+# Get the currently focused window ID (ignore errors if none)
+focused_window_id=$(xdotool getwindowfocus 2>/dev/null || true)
+
+# Check if the focused window belongs to the target application
+is_target_focused=false
+if [[ -n "$focused_window_id" && -n "$window_ids" ]]; then
+    while read -r wid; do
+        if [[ "$wid" == "$focused_window_id" ]]; then
+            is_target_focused=true
+            break
+        fi
+    done <<< "$window_ids"
+fi
+
+if [[ "$is_target_focused" == true ]]; then
+    # Target is already focused -- minimize it
+    xdotool windowminimize "$focused_window_id"
+else
+    # Switch to the target window (wmctrl -x -R matches by WM_CLASS)
+    if ! wmctrl -x -R "$my_term" 2>/dev/null; then
+        # Fallback: activate the first matching window ID directly
+        first_id=$(printf '%s\n' "$window_ids" | head -n1)
+        if [[ -n "$first_id" ]]; then
+            xdotool windowactivate "$first_id"
+        fi
+    fi
+fi

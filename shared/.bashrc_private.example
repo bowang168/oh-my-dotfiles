@@ -1,0 +1,47 @@
+# ~/.bashrc_private — secrets & internal config
+# chmod 600 | sourced by ~/.zshrc and ~/.bashrc | DO NOT commit
+
+# --- API Keys ---
+
+export QDRANT_API_KEY="your_qdrant_api_key_here"
+export QDRANT_CLOUD_URL="https://your-cluster.cloud.qdrant.io"
+export QDRANT_CLOUD_API_KEY="your_qdrant_cloud_api_key_here"
+export DEEPSEEK_API_KEY="your_deepseek_api_key_here"
+
+# TradeMe API
+export TRADEME_CONSUMER_KEY="your_trademe_consumer_key_here"
+export TRADEME_CONSUMER_SECRET="your_trademe_consumer_secret_here"
+
+# --- Corporate Proxy ---
+# Note: This function uses zsh-specific syntax (typeset -A, ${(kj:|:)}).
+# If sourcing from bash, either rewrite or skip this section.
+
+if [[ -n "$ZSH_VERSION" ]]; then
+    typeset -A _proxy_hosts=(
+        [region1]="proxy.example.com"
+        [region2]="proxy.example.com"
+    )
+
+    _proxy_no_proxy="localhost,127.0.0.1,.example.com"
+
+    proxyset() {
+        local region="$1"
+        if [[ "$region" == "off" ]]; then
+            unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY \
+                  ftp_proxy FTP_PROXY RSYNC_PROXY no_proxy NO_PROXY
+            echo "Proxy cleared"
+            return
+        fi
+
+        local host="${_proxy_hosts[$region]}"
+        if [[ -z "$host" ]]; then
+            echo "Usage: proxyset [${(kj:|:)_proxy_hosts}|off]"
+            return 1
+        fi
+
+        local url="http://${host}:80"
+        export {http,https,ftp}_proxy="$url" {HTTP,HTTPS,FTP}_PROXY="$url" RSYNC_PROXY="$url"
+        export no_proxy="$_proxy_no_proxy" NO_PROXY="$_proxy_no_proxy"
+        echo "Proxy → $region ($host)"
+    }
+fi

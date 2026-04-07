@@ -1,0 +1,57 @@
+# === 字体 ===
+font-family = MapleMono NF
+font-size = 14
+font-thicken = true
+
+# === 主题 ===
+# 固定 dark 主题（避免 quick terminal 误用 light theme）
+#theme = Catppuccin Mocha
+theme = Catppuccin Latte
+
+# === 窗口 ===
+window-padding-x = 8
+window-padding-y = 4
+window-decoration = true
+# AeroSpace 环境下用 hidden 避免 native tabs 冲突
+# 用 ⌘D/⌘⇧D 分屏替代 tab，⌘N 新窗口由 AeroSpace tiling
+macos-titlebar-style = hidden
+window-save-state = always
+confirm-close-surface = false
+
+# === 光标 ===
+cursor-style = block
+cursor-style-blink = false
+shell-integration-features = no-cursor
+
+# === 性能 ===
+# Metal 渲染，M3 Pro 直接拉满
+window-vsync = true
+
+# === 行为 ===
+copy-on-select = clipboard
+mouse-hide-while-typing = true
+scrollback-limit = 1000000
+
+# === 剪贴板/链接 ===
+link-url = true
+
+# === macOS 特定 ===
+macos-option-as-alt = true
+macos-icon = custom-style
+macos-icon-ghost-color = #cba6f7
+macos-icon-screen-color = #1e1e2e
+
+# Hyper 键组合透传给 macOS（避免被终端捕获）
+keybind = ctrl+shift+alt+super+enter=ignore
+
+
+
+
+# 全局快捷键 - 随时呼出/隐藏
+keybind = global:cmd+grave_accent=toggle_quick_terminal
+keybind = global:super+shift+alt+ctrl+i=toggle_quick_terminal
+#keybind = global:cmd+i=toggle_quick_terminal
+
+# Quick Terminal 设置
+quick-terminal-position = top
+quick-terminal-size = 50%

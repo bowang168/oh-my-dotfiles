@@ -1,0 +1,24 @@
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[user]
+	name = Bo Wang
+	email = 215456069+bowang168@users.noreply.github.com
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+[core]
+    pager = delta
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+    hyperlinks = true
+[interactive]
+    diffFilter = delta --color-only
+[merge]
+    conflictstyle = zdiff3
+[diff]
+    colorMoved = default

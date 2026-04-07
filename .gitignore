@@ -1,0 +1,21 @@
+# Secrets
+.bashrc_private
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.viminfo
+
+# Editor state
+.claude/
+
+# Fonts (too large for git)
+fonts/
+
+# Backup artifacts
+.last_backup

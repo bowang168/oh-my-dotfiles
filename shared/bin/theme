@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Switch between dark (catppuccin-mocha) and light (catppuccin-latte) theme
+# Supports: macOS (defaults/osascript) and Linux (dconf/gsettings)
+# Usage: theme dark | theme light | theme toggle
+
+STATE_FILE="$HOME/.theme_mode"
+OS_TYPE="$(uname)"
+
+current_mode() {
+    cat "$STATE_FILE" 2>/dev/null || echo "dark"
+}
+
+set_theme() {
+    local mode="$1"
+    local label
+
+    if [[ "$mode" == "dark" ]]; then
+        label="catppuccin-mocha"
+    elif [[ "$mode" == "light" ]]; then
+        label="catppuccin-latte"
+    else
+        echo "Usage: theme [dark|light|toggle]"
+        return 1
+    fi
+
+    # Persist mode for nvim and zsh to read on startup
+    echo "$mode" > "$STATE_FILE"
+
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        # macOS: switch system appearance
+        if [[ "$mode" == "dark" ]]; then
+            osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to true' 2>/dev/null
+        else
+            osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to false' 2>/dev/null
+        fi
+    else
+        # Linux (GNOME): switch terminal profile + GTK theme
+        dconf write /org/gnome/terminal/legacy/profiles:/default "'$label'" 2>/dev/null
+        if [[ "$mode" == "dark" ]]; then
+            gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null
+        else
+            gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita' 2>/dev/null
+        fi
+    fi
+
+    echo "Switched to $mode ($label). Run 'exec zsh' to reload shell colors."
+}
+
+case "${1:-toggle}" in
+    dark)   set_theme dark ;;
+    light)  set_theme light ;;
+    toggle)
+        if [[ "$(current_mode)" == "dark" ]]; then
+            set_theme light
+        else
+            set_theme dark
+        fi
+        ;;
+    *)  echo "Usage: theme [dark|light|toggle]" ;;
+esac

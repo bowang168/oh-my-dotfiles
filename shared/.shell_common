@@ -1,0 +1,206 @@
+# ============================================================================
+# .shell_common — shared shell configuration
+# Sourced by both .bashrc and .zshrc
+# Supports: macOS (Darwin) / Oracle Linux 9
+# ============================================================================
+
+OS_TYPE="$(uname)"
+
+# ----------------------------------------------------------------------------
+# Platform-specific settings
+# ----------------------------------------------------------------------------
+
+if [[ "$OS_TYPE" == "Darwin" ]]; then
+    # --- macOS only ---
+    alias cat="bat --theme auto:system --theme-dark default --theme-light GitHub"
+    alias geany="env LANG=zh_CN.UTF-8 LANGUAGE=zh_CN LC_MESSAGES=zh_CN.UTF-8 /Applications/Geany.app/Contents/MacOS/geany"
+    alias rm='rm -iv'
+    alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+    alias vpnui=/opt/cisco/secureclient/bin/vpnui
+    alias typora="open -a typora"
+
+    # Finder / Desktop utilities
+    alias dstore-clean='find . -type f -name .DS_Store -print0 | xargs -0 rm'
+    alias emptytrash='sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo rm -rfv /private/var/log/asl/*.asl'
+    alias showdotfiles='defaults write com.apple.finder AppleShowAllFiles -bool true  && killall Finder'
+    alias hidedotfiles='defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder'
+    alias showdeskicons='defaults write com.apple.finder CreateDesktop -bool true  && killall Finder'
+    alias hidedeskicons='defaults write com.apple.finder CreateDesktop -bool false && killall Finder'
+    alias screensaverDesktop='/System/Library/Frameworks/ScreenSaver.framework/Resources/ScreenSaverEngine.app/Contents/MacOS/ScreenSaverEngine -background'
+
+    # Quick Look from terminal
+    ql() { qlmanage -p "$*" >& /dev/null; }
+else
+    # --- Oracle Linux 9 ---
+    alias rm='rm -iv --preserve-root'
+    alias hd='od -Ax -tx1z -v'
+    alias geany='LANG=zh_CN.UTF-8 LANGUAGE=zh_CN geany'
+fi
+
+# ----------------------------------------------------------------------------
+# Listing — eza (preferred) with fallback to system ls
+#   eza: https://github.com/eza-community/eza
+# ----------------------------------------------------------------------------
+
+if command -v eza &>/dev/null; then
+    alias ls='eza --group-directories-first'
+    alias ll='eza -lh  --group-directories-first --git --icons'
+    alias la='eza -lha --group-directories-first --git --icons'
+    alias l.='eza -d .* --group-directories-first'
+    alias lf='eza -lhD'
+    alias lr='eza -lhT -L2 --group-directories-first --git'
+    alias lt='eza -la --icons --tree --level=2'
+    alias l2='eza -T -L2 --group-directories-first'
+    alias l3='eza -T -L3 --group-directories-first'
+    alias l4='eza -T -L4 --group-directories-first'
+elif [[ "$OS_TYPE" == "Darwin" ]]; then
+    alias ll='ls -lhF'
+    alias la='ls -lha'
+    alias l.='ls -d .*'
+    alias lf='ls -ld */'
+    alias lr='ls -lhAR'
+    alias l2='tree -C . -L 2'
+    alias l3='tree -C . -L 3'
+    alias l4='tree -C . -L 4'
+else
+    alias ll='ls -lhA  --group-directories-first'
+    alias la='ls -lha  --group-directories-first'
+    alias l.='ls -d .* --group-directories-first'
+    alias lf='ls -ld */  --group-directories-first'
+    alias lr='ls -lhAR --group-directories-first'
+    alias l2='tree -C . -L 2'
+    alias l3='tree -C . -L 3'
+    alias l4='tree -C . -L 4'
+fi
+
+# ----------------------------------------------------------------------------
+# Navigation — zoxide (preferred) with fallback to enhanced cd
+#   zoxide: https://github.com/ajeetdsouza/zoxide
+#   --cmd cd: replaces builtin cd so existing muscle memory works
+# ----------------------------------------------------------------------------
+
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init "${ZSH_VERSION:+zsh}${BASH_VERSION:+bash}" --cmd cd)"
+else
+    cd() { builtin cd "$@" && ls -lh; }
+fi
+
+# Quick parent traversal
+alias ..='cd ..'
+alias ...='cd ../..'
+alias .2='cd ../../'
+alias .3='cd ../../../'
+alias .4='cd ../../../../'
+alias .5='cd ../../../../..'
+
+# Quick directory jumps
+cdo() { cd "$HOME/d/obsi"; }
+cdd() { cd "$HOME/d/"; }
+
+if [[ "$OS_TYPE" == "Darwin" ]]; then
+    cdc() { cd "$HOME/Library/Mobile Documents/com~apple~CloudDocs"; }
+
+    # cd to the directory shown in the frontmost Finder window
+    cdf() {
+        local dir
+        dir=$( /usr/bin/osascript <<'APPLESCRIPT'
+            tell application "Finder"
+                try
+                    set f to (folder of the front window as alias)
+                on error
+                    set f to (path to desktop folder as alias)
+                end try
+                POSIX path of f
+            end tell
+APPLESCRIPT
+        )
+        echo "cd to \"$dir\""
+        cd "$dir"
+    }
+fi
+
+# ----------------------------------------------------------------------------
+# Editor — prefer nvim > vim > vi
+# ----------------------------------------------------------------------------
+
+if command -v nvim &>/dev/null; then
+    export EDITOR='nvim'
+    export VISUAL='nvim'
+    alias vim='nvim'
+    alias vi='nvim'
+elif command -v vim &>/dev/null; then
+    export EDITOR='vim'
+    export VISUAL='vim'
+    alias vi='vim'
+fi
+
+# ----------------------------------------------------------------------------
+# File operations
+# ----------------------------------------------------------------------------
+
+alias mv='mv -iv'
+alias cp='cp -iv'
+alias mkdir='mkdir -pv'
+alias more='less'
+alias dig='dig +noall +answer'
+
+# Git shortcuts (supplement oh-my-zsh git plugin)
+alias gs='git status'
+alias glo='git log --oneline -20'
+alias lg='lazygit'
+
+# System utilities
+alias ports='lsof -i -P -n | grep LISTEN'
+[[ "$OS_TYPE" == "Darwin" ]] && alias ip='curl -s ifconfig.me'
+alias fix_stty='stty sane'
+alias ssh='TERM=xterm-256color ssh'
+alias cal='cal -3'
+man() {
+    # 1. Try tldr (Chinese)
+    if command -v tldr &>/dev/null; then
+        tldr -L zh "$@" 2>/dev/null && return
+    else
+        echo "tldr not installed, install with: pip3 install tldr" >&2
+    fi
+    # 2. Try Chinese manpage
+    local zh_page
+    zh_page=$(command man -L zh_CN -w "$@" 2>/dev/null)
+    if [[ -n "$zh_page" ]]; then
+        command man -L zh_CN "$@"
+        return
+    fi
+    # 3. Fallback to default
+    echo "No Chinese manpage for '$*', falling back to English" >&2
+    command man "$@"
+}
+if [[ "$OS_TYPE" != "Darwin" ]]; then
+    alias diff='LC_ALL=C TZ=GMT0 diff -Naur'
+fi
+
+# Universal archive extractor
+extract() {
+    if [[ ! -f "$1" ]]; then
+        echo "'$1' is not a valid file" >&2
+        return 1
+    fi
+    case "$1" in
+        *.tar.bz2) tar xjf  "$1" ;;
+        *.tar.gz)  tar xzf  "$1" ;;
+        *.bz2)     bunzip2  "$1" ;;
+        *.rar)     unrar x  "$1" ;;
+        *.gz)      gunzip   "$1" ;;
+        *.tar)     tar xf   "$1" ;;
+        *.tbz2)    tar xjf  "$1" ;;
+        *.tgz)     tar xzf  "$1" ;;
+        *.zip)     unzip    "$1" ;;
+        *.Z)       uncompress "$1" ;;
+        *.7z)      7z x     "$1" ;;
+        *)         echo "'$1' — unknown archive format" >&2; return 1 ;;
+    esac
+}
+
+# iTerm2: print clickable file:// URL
+fileurl() {
+    echo "file://$(python3 -c "import urllib.parse; print(urllib.parse.quote('$(realpath "$1")'))")"
+}
+

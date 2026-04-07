@@ -1,0 +1,52 @@
+# GNOME Terminal profiles with Catppuccin themes
+# Restore: dconf load /org/gnome/terminal/legacy/profiles:/ < gnome-terminal-profiles.dconf
+
+[/]
+default='catppuccin-mocha'
+list=['b1dcc9dd-5262-4d8d-a863-c897e6d979b9', 'catppuccin-mocha', 'catppuccin-latte']
+
+[:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+background-color='rgb(23,20,33)'
+custom-command='/usr/bin/zsh'
+font='Input Mono 13'
+foreground-color='rgb(208,207,204)'
+login-shell=true
+scroll-on-keystroke=false
+scroll-on-output=true
+scrollback-lines=9990000
+scrollback-unlimited=true
+scrollbar-policy='never'
+use-custom-command=true
+use-system-font=false
+use-theme-colors=true
+visible-name='Default'
+
+[:catppuccin-latte]
+background-color='#EFF1F5'
+bold-is-bright=true
+custom-command='/usr/bin/zsh'
+font='Input Mono 13'
+foreground-color='#4C4F69'
+login-shell=true
+palette=['#5C5F77', '#D20F39', '#40A02B', '#DF8E1D', '#1E66F5', '#EA76CB', '#179299', '#ACB0BE', '#6C6F85', '#D20F39', '#40A02B', '#DF8E1D', '#1E66F5', '#EA76CB', '#179299', '#BCC0CC']
+scrollback-unlimited=true
+scrollbar-policy='never'
+use-custom-command=true
+use-system-font=false
+use-theme-colors=false
+visible-name='Catppuccin Latte'
+
+[:catppuccin-mocha]
+background-color='#1E1E2E'
+bold-is-bright=true
+custom-command='/usr/bin/zsh'
+font='Input Mono 13'
+foreground-color='#CDD6F4'
+login-shell=true
+palette=['#45475A', '#F38BA8', '#A6E3A1', '#F9E2AF', '#89B4FA', '#F5C2E7', '#94E2D5', '#BAC2DE', '#585B70', '#F38BA8', '#A6E3A1', '#F9E2AF', '#89B4FA', '#F5C2E7', '#94E2D5', '#A6ADC8']
+scrollback-unlimited=true
+scrollbar-policy='never'
+use-custom-command=true
+use-system-font=false
+use-theme-colors=false
+visible-name='Catppuccin Mocha'

@@ -1,0 +1,57 @@
+config-version = 2
+start-at-login = true
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+accordion-padding = 30
+
+# Ghostty: 不用 native tabs（和 AeroSpace 冲突），改用 ⌘D 分屏 + ⌘N 新窗口
+# ⌘N 新窗口 → AeroSpace 自动 tiling
+# ⌘D / ⌘⇧D 分屏 → Ghostty 内部管理，AeroSpace 无感
+
+[mode.main.binding]
+    # 焦点切换 (HJKL Vim 风格)
+    alt-h = 'focus left'
+    alt-j = 'focus down'
+    alt-k = 'focus up'
+    alt-l = 'focus right'
+
+    # 移动窗口
+    alt-shift-h = 'move left'
+    alt-shift-j = 'move down'
+    alt-shift-k = 'move up'
+    alt-shift-l = 'move right'
+
+    # 工作区切换
+    alt-1 = 'workspace 1'
+    alt-2 = 'workspace 2'
+    alt-3 = 'workspace 3'
+    alt-4 = 'workspace 4'
+    alt-5 = 'workspace 5'
+
+    # 移动窗口到工作区
+    alt-shift-1 = 'move-node-to-workspace 1'
+    alt-shift-2 = 'move-node-to-workspace 2'
+    alt-shift-3 = 'move-node-to-workspace 3'
+
+    # 布局切换
+    alt-slash = 'layout tiles horizontal vertical'
+    alt-comma = 'layout accordion horizontal vertical'
+    alt-f = 'fullscreen'
+
+    # 调整大小
+    alt-minus = 'resize smart -50'
+    alt-equal = 'resize smart +50'
+
+    # 快速切回上一个工作区
+    alt-tab = 'workspace-back-and-forth'
+
+    # 进入 service mode
+    alt-shift-semicolon = 'mode service'
+
+[mode.service.binding]
+    esc = 'mode main'
+    r = ['flatten-workspace-tree', 'mode main']
+    q = ['close-all-windows-but-current', 'mode main']
+    f = ['layout floating tiling', 'mode main']   # 切换浮动/平铺
+
+
