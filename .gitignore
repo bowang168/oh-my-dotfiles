@@ -13,6 +13,7 @@
 
 # Editor state
 .claude/
+claude/
 
 # Fonts (too large for git)
 fonts/
