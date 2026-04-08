@@ -19,3 +19,7 @@ fonts/
 
 # Backup artifacts
 .last_backup
+
+# Python
+__pycache__/
+*.pyc
