@@ -5,8 +5,8 @@
 
 # --- Oh My Zsh ---
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""  # Using starship prompt instead
-#ZSH_THEME="bira"  # Using starship prompt instead
+#ZSH_THEME=""  # Using starship prompt instead
+ZSH_THEME="bira"  # Using starship prompt instead
 zstyle ':omz:update' mode disabled
 HIST_STAMPS="yyyy-mm-dd"
 
@@ -52,4 +52,4 @@ export OLLAMA_ORIGINS="app://obsidian.md*"
 alias l='\ls'
 
 # --- Starship prompt (must be at end) ---
-eval "$(starship init zsh)"
+#eval "$(starship init zsh)"

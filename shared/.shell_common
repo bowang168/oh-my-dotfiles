@@ -83,11 +83,13 @@ fi
 #   --cmd cd: replaces builtin cd so existing muscle memory works
 # ----------------------------------------------------------------------------
 
-if command -v zoxide &>/dev/null; then
-    eval "$(zoxide init "${ZSH_VERSION:+zsh}${BASH_VERSION:+bash}" --cmd cd)"
-else
-    cd() { builtin cd "$@" && ls -lh; }
-fi
+#if command -v zoxide &>/dev/null; then
+#    eval "$(zoxide init "${ZSH_VERSION:+zsh}${BASH_VERSION:+bash}" --cmd cd)"
+#else
+#    cd() { builtin cd "$@" && ls -lh; }
+#fi
+
+cd() { builtin cd "$@" && ls -lh; }
 
 # Quick parent traversal
 alias ..='cd ..'
