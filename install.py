@@ -645,66 +645,7 @@ def step_services(dry_run=False, **_):
     info(f"restored {count} services -> ~/Library/Services/")
 
 
-# ── 6. Claude Code ───────────────────────────────────────────────────
-
-
-def _check_claude():
-    needs = []
-    if not has_cmd("claude"):
-        needs.append("CLI not installed")
-    claude_src = REPO / "claude"
-    if claude_src.exists():
-        claude_dst = HOME / ".claude"
-        for f in ["CLAUDE.md", "settings.json"]:
-            src, dst = claude_src / f, claude_dst / f
-            if src.exists() and not dst.exists():
-                needs.append(f"{f} missing")
-    if needs:
-        return True, "; ".join(needs)
-    return False, "Claude Code already installed and configured"
-
-
-@step("claude", "6. Claude Code CLI + config", check=_check_claude)
-def step_claude(dry_run=False, **_):
-    section("6. Claude Code")
-
-    # Install CLI
-    if has_cmd("claude"):
-        _, ver = run("claude --version 2>/dev/null")
-        info(f"Claude Code CLI installed: {ver}")
-    else:
-        info("Installing Claude Code CLI ...")
-        if not dry_run:
-            rc = run_visible("curl -fsSL https://claude.ai/install.sh | bash")
-            if rc != 0:
-                warn("install failed — run manually: curl -fsSL https://claude.ai/install.sh | bash")
-
-    # Restore config from repo (if backed up)
-    claude_src = REPO / "claude"
-    claude_dst = HOME / ".claude"
-
-    if not claude_src.exists():
-        warn("claude/ not in repo — skipping config restore")
-        return
-
-    for f in ["CLAUDE.md", "settings.json"]:
-        copy_file(claude_src / f, claude_dst / f, dry_run)
-
-    # Restore project memories
-    projects_src = claude_src / "projects"
-    if projects_src.exists():
-        for project in sorted(projects_src.iterdir()):
-            if not project.is_dir():
-                continue
-            project_dst = claude_dst / "projects" / project.name
-            for item in project.iterdir():
-                if item.is_dir():
-                    copy_dir(item, project_dst / item.name, dry_run)
-                else:
-                    copy_file(item, project_dst / item.name, dry_run)
-
-
-# ── 7. Fonts ─────────────────────────────────────────────────────────
+# ── 6. Fonts ──────────────────────────────────────────────────────────
 
 
 def _check_fonts():
@@ -719,9 +660,9 @@ def _check_fonts():
     return False, "all fonts already installed"
 
 
-@step("fonts", "7. Fonts (Nerd Font + CJK)", check=_check_fonts)
+@step("fonts", "6. Fonts (Nerd Font + CJK)", check=_check_fonts)
 def step_fonts(dry_run=False, **_):
-    section("7. Fonts")
+    section("6. Fonts")
 
     if not IS_MACOS:
         warn("font install via brew is macOS-only")
@@ -740,7 +681,7 @@ def step_fonts(dry_run=False, **_):
                 run_visible(f"brew install --cask {cask}")
 
 
-# ── 8. Hide home folders ─────────────────────────────────────────────
+# ── 7. Hide home folders ─────────────────────────────────────────────
 
 
 def _check_hide_folders():
@@ -761,9 +702,9 @@ def _check_hide_folders():
     return False, "all folders already hidden"
 
 
-@step("hidefolders", "8. Hide unused home folders", check=_check_hide_folders)
+@step("hidefolders", "7. Hide unused home folders", check=_check_hide_folders)
 def step_hide_folders(dry_run=False, **_):
-    section("8. Hide Home Folders")
+    section("7. Hide Home Folders")
 
     if not IS_MACOS:
         warn("chflags hidden is macOS-only")
@@ -790,7 +731,7 @@ def step_hide_folders(dry_run=False, **_):
     info(f"hidden {count} folders")
 
 
-# ── 9. Ollama models ─────────────────────────────────────────────────
+# ── 8. Ollama models ─────────────────────────────────────────────────
 
 
 def _check_ollama():
@@ -812,9 +753,9 @@ def _check_ollama():
     return False, "all Ollama models already present"
 
 
-@step("ollama", "9. Ollama models (optional, slow)", check=_check_ollama)
+@step("ollama", "8. Ollama models (optional, slow)", check=_check_ollama)
 def step_ollama(dry_run=False, **_):
-    section("9. Ollama Models")
+    section("8. Ollama Models")
 
     models_file = REPO / "ollama_models.txt"
     if not models_file.exists():
@@ -860,7 +801,7 @@ def step_ollama(dry_run=False, **_):
             error(f"pull failed: {m}")
 
 
-# ── 10. Chinese CLI help ─────────────────────────────────────────────
+# ── 9. Chinese CLI help ──────────────────────────────────────────────
 
 
 def _check_clihelp():
@@ -869,9 +810,9 @@ def _check_clihelp():
     return True, "tldr not installed"
 
 
-@step("clihelp", "10. Chinese CLI help (tldr)", check=_check_clihelp)
+@step("clihelp", "9. Chinese CLI help (tldr)", check=_check_clihelp)
 def step_cli_help(dry_run=False, **_):
-    section("10. Chinese CLI Help")
+    section("9. Chinese CLI Help")
 
     if has_cmd("tldr"):
         info("tldr already installed")
@@ -894,10 +835,11 @@ def print_manual_steps():
     print(f"\n{BOLD}{YELLOW}Manual steps remaining:{RESET}")
     print("  1. Copy ~/.ssh/ and ~/.bashrc_private from encrypted backup")
     print("  2. Copy ~/d/Personal_AI_Brain/ from encrypted backup")
-    print("  3. Login: Apple ID / iCloud")
-    print("  4. Login: Brave Browser sync")
-    print("  5. Configure input method (if applicable)")
-    print("  6. Open a new terminal or run: exec zsh")
+    print("  3. Install Claude Code: curl -fsSL https://claude.ai/install.sh | bash")
+    print("  4. Login: Apple ID / iCloud")
+    print("  5. Login: Brave Browser sync")
+    print("  6. Configure input method (if applicable)")
+    print("  7. Open a new terminal or run: exec zsh")
 
     if IS_MACOS:
         print(f"\n{BOLD}{YELLOW}macOS settings that require manual confirmation:{RESET}")

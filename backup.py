@@ -325,57 +325,12 @@ def step_services(dry_run=False, **_):
     info(f"backed up {count} services")
 
 
-# ── 5. Claude Code config + memory ───────────────────────────────────
+# ── 5. Oh My Zsh custom plugins ──────────────────────────────────────
 
 
-@step("claude", "5. Claude Code config + memory")
-def step_claude(dry_run=False, **_):
-    section("5. Claude Code")
-
-    claude_dir = HOME / ".claude"
-    dst_dir = REPO / "claude"
-
-    # Global config files
-    for f in ["CLAUDE.md", "settings.json"]:
-        copy_file(claude_dir / f, dst_dir / f, dry_run)
-
-    # Project memories (skip projects with no memory)
-    projects_dir = claude_dir / "projects"
-    if not projects_dir.exists():
-        warn("~/.claude/projects/ not found")
-        return
-
-    memory_count = 0
-    for project in sorted(projects_dir.iterdir()):
-        if not project.is_dir():
-            continue
-        memory_dir = project / "memory"
-        memory_md  = project / "MEMORY.md"
-        claude_md  = project / "CLAUDE.md"
-
-        has_data = memory_dir.exists() or memory_md.exists() or claude_md.exists()
-        if not has_data:
-            continue
-
-        project_dst = dst_dir / "projects" / project.name
-        if memory_dir.exists():
-            copy_dir(memory_dir, project_dst / "memory", dry_run)
-            memory_count += 1
-        if memory_md.exists():
-            copy_file(memory_md, project_dst / "MEMORY.md", dry_run)
-        if claude_md.exists():
-            copy_file(claude_md, project_dst / "CLAUDE.md", dry_run)
-
-    if not dry_run:
-        info(f"backed up {memory_count} project memories")
-
-
-# ── 6. Oh My Zsh custom plugins ─────────────────────────────────────
-
-
-@step("omz", "6. Oh My Zsh custom plugins/themes")
+@step("omz", "5. Oh My Zsh custom plugins/themes")
 def step_omz(dry_run=False, **_):
-    section("6. Oh My Zsh Custom")
+    section("5. Oh My Zsh Custom")
 
     omz_custom = HOME / ".oh-my-zsh" / "custom"
     if not omz_custom.exists():
@@ -421,9 +376,9 @@ def step_omz(dry_run=False, **_):
 # ── 7. Ollama models list ────────────────────────────────────────────
 
 
-@step("ollama", "7. Ollama models list")
+@step("ollama", "6. Ollama models list")
 def step_ollama(dry_run=False, **_):
-    section("7. Ollama Models")
+    section("6. Ollama Models")
 
     dst = REPO / "ollama_models.txt"
     if not has_cmd("ollama"):
@@ -444,9 +399,9 @@ def step_ollama(dry_run=False, **_):
 # ── 8. Shortcuts list (macOS) ────────────────────────────────────────
 
 
-@step("shortcuts", "8. Shortcuts (Quick Actions list)")
+@step("shortcuts", "7. Shortcuts (Quick Actions list)")
 def step_shortcuts(dry_run=False, **_):
-    section("8. Shortcuts")
+    section("7. Shortcuts")
 
     if not IS_MACOS:
         warn("Shortcuts are macOS-only")
@@ -509,9 +464,10 @@ examples:
     print(f"  Backup complete!")
     print(f"{'=' * 60}{RESET}")
 
-    print(f"\n{YELLOW}Reminder — these are NOT backed up (manual):{RESET}")
+    print(f"\n{YELLOW}Reminder — these are NOT backed up (sensitive/manual):{RESET}")
     print("  - ~/.ssh/              (SSH keys)")
     print("  - ~/.bashrc_private    (API keys)")
+    print("  - ~/.claude/           (Claude Code config, memories, API keys)")
     print("  - ~/d/Personal_AI_Brain/")
     print(f"\n  Next: cd {REPO} && git diff && git add -A && git commit -m 'backup' && git push")
 
