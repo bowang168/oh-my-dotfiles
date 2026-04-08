@@ -1,5 +1,8 @@
 # oh-my-dotfiles
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/bowang168)
+[![Sponsor](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/bowang168)
+
 Cross-platform dotfiles & config management for **macOS** + **Oracle Linux 9**.
 
 Two scripts handle everything:

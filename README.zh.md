@@ -1,5 +1,8 @@
 # oh-my-dotfiles
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/bowang168)
+[![Sponsor](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/bowang168)
+
 跨平台 dotfiles 与配置管理，支持 **macOS** + **Oracle Linux 9**。
 
 两个脚本搞定一切：
