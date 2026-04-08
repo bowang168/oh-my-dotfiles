@@ -187,10 +187,15 @@ def confirm(msg, auto_yes=False):
 STEPS = {}
 
 
-def step(name, label):
-    """Decorator to register a restore step."""
+def step(name, label, check=None):
+    """Decorator to register a restore step.
+
+    check: optional callable() -> (bool, str)
+           True  = step has work to do (prompt user)
+           False = already up-to-date (skip silently)
+    """
     def decorator(func):
-        STEPS[name] = (label, func)
+        STEPS[name] = (label, func, check)
         return func
     return decorator
 
@@ -198,7 +203,23 @@ def step(name, label):
 # ── 0. Prerequisites ─────────────────────────────────────────────────
 
 
-@step("prereqs", "0. Prerequisites (Xcode CLT, Homebrew, git, gh)")
+def _check_prereqs():
+    if not IS_MACOS:
+        # Linux: just verify git + gh present
+        missing = [t for t in ("git", "gh") if not has_cmd(t)]
+        if missing:
+            return True, f"missing: {', '.join(missing)}"
+        return False, "git and gh already installed"
+    # macOS: need brew or xcode-select
+    rc, _ = run("xcode-select -p")
+    if rc != 0:
+        return True, "Xcode CLT not installed"
+    if not has_cmd("brew"):
+        return True, "Homebrew not installed"
+    return False, "Xcode CLT and Homebrew already installed"
+
+
+@step("prereqs", "0. Prerequisites (git, gh)", check=_check_prereqs)
 def step_prereqs(dry_run=False, **_):
     section("0. Prerequisites")
 
@@ -253,7 +274,28 @@ def step_prereqs(dry_run=False, **_):
 # ── 1. Homebrew / dnf packages ───────────────────────────────────────
 
 
-@step("brew", "1. Install packages (Homebrew / dnf)")
+def _check_brew():
+    if IS_MACOS:
+        brewfile = REPO / "macos" / "Brewfile"
+        if not brewfile.exists():
+            return False, "macos/Brewfile not found"
+        rc, _ = run(f'brew bundle check --file="{brewfile}" --no-upgrade 2>/dev/null')
+        if rc == 0:
+            return False, "all Brewfile packages already installed"
+        return True, "Brewfile has packages to install"
+    else:
+        pkg_file = REPO / "linux" / "packages.txt"
+        if not pkg_file.exists():
+            return False, "linux/packages.txt not found"
+        pkgs = [l.strip() for l in pkg_file.read_text().splitlines()
+                if l.strip() and not l.startswith("#")]
+        rc, out = run(f"rpm -q {' '.join(pkgs)} 2>/dev/null | grep 'not installed'")
+        if rc != 0:  # grep found nothing = all installed
+            return False, "all packages already installed"
+        return True, "packages to install"
+
+
+@step("brew", "1. Install packages (Homebrew / dnf)", check=_check_brew)
 def step_brew(dry_run=False, **_):
     section("1. Install Packages")
 
@@ -289,7 +331,38 @@ def step_brew(dry_run=False, **_):
 # ── 2. Config files (symlinks) ───────────────────────────────────────
 
 
-@step("configs", "2. Config files (symlinks)")
+def _check_configs():
+    shared = REPO / "shared"
+    targets = [
+        (shared / f, HOME / f)
+        for f in [".bash_profile", ".bashrc", ".shell_common",
+                  ".zprofile", ".zshenv", ".zshrc",
+                  ".hushlogin", ".gitconfig"]
+    ]
+    targets += [
+        (shared / "starship.toml", HOME / ".config" / "starship.toml"),
+        (shared / "bin" / "theme", HOME / ".local" / "bin" / "theme"),
+    ]
+    if IS_MACOS:
+        targets += [
+            (REPO / "macos" / "ghostty" / "config", HOME / ".config" / "ghostty" / "config"),
+            (REPO / "macos" / ".aerospace.toml", HOME / ".aerospace.toml"),
+        ]
+    else:
+        targets += [
+            (REPO / "linux" / "kitty.conf", HOME / ".config" / "kitty" / "kitty.conf"),
+        ]
+
+    missing = [
+        str(dst) for src, dst in targets
+        if src.exists() and not (dst.is_symlink() and dst.resolve() == src.resolve())
+    ]
+    if missing:
+        return True, f"{len(missing)} symlink(s) need updating"
+    return False, "all symlinks already up-to-date"
+
+
+@step("configs", "2. Config files (symlinks)", check=_check_configs)
 def step_configs(dry_run=False, **_):
     section("2. Config Files (symlinks)")
 
@@ -355,7 +428,30 @@ def step_configs(dry_run=False, **_):
 # ── 3. Oh My Zsh + plugins ──────────────────────────────────────────
 
 
-@step("omz", "3. Oh My Zsh + custom plugins")
+def _check_omz():
+    omz_dir = HOME / ".oh-my-zsh"
+    if not omz_dir.exists():
+        return True, "Oh My Zsh not installed"
+    plugins_file = REPO / "macos" / "omz-custom" / "plugins.txt"
+    if not plugins_file.exists():
+        return False, "Oh My Zsh installed, no plugins.txt"
+    custom_dir = omz_dir / "custom" / "plugins"
+    missing = []
+    for line in plugins_file.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) == 2:
+            name = parts[0]
+            if not (custom_dir / name).exists():
+                missing.append(name)
+    if missing:
+        return True, f"{len(missing)} plugin(s) not installed: {', '.join(missing)}"
+    return False, "Oh My Zsh and all plugins already installed"
+
+
+@step("omz", "3. Oh My Zsh + custom plugins", check=_check_omz)
 def step_omz(dry_run=False, **_):
     section("3. Oh My Zsh")
 
@@ -408,7 +504,19 @@ def step_omz(dry_run=False, **_):
 # ── 4. macOS defaults ────────────────────────────────────────────────
 
 
-@step("defaults", "4. macOS defaults (system preferences)")
+def _check_defaults():
+    if not IS_MACOS:
+        dconf_file = REPO / "linux" / "gnome-terminal-profiles.dconf"
+        if not has_cmd("dconf") or not dconf_file.exists():
+            return False, "dconf not available or no profile file"
+        return True, "GNOME terminal profiles to load"
+    defaults_dir = REPO / "macos" / "defaults"
+    if not defaults_dir.exists():
+        return False, "macos/defaults/ not found"
+    return True, "macOS defaults to apply (no efficient pre-check)"
+
+
+@step("defaults", "4. macOS defaults (system preferences)", check=_check_defaults)
 def step_defaults(dry_run=False, **_):
     section("4. macOS Defaults")
 
@@ -490,7 +598,21 @@ def step_defaults(dry_run=False, **_):
 # ── 5. Services (Automator Quick Actions) ────────────────────────────
 
 
-@step("services", "5. Services (Automator workflows)")
+def _check_services():
+    if not IS_MACOS:
+        return False, "Services are macOS-only"
+    src = REPO / "macos" / "services"
+    if not src.exists():
+        return False, "macos/services/ not found"
+    dst = HOME / "Library" / "Services"
+    items = [i for i in sorted(src.iterdir()) if not i.name.startswith(".")]
+    missing = [i for i in items if not (dst / i.name).exists()]
+    if missing:
+        return True, f"{len(missing)} service(s) not installed"
+    return False, "all services already installed"
+
+
+@step("services", "5. Services (Automator workflows)", check=_check_services)
 def step_services(dry_run=False, **_):
     section("5. Services")
 
@@ -526,7 +648,23 @@ def step_services(dry_run=False, **_):
 # ── 6. Claude Code ───────────────────────────────────────────────────
 
 
-@step("claude", "6. Claude Code CLI + config")
+def _check_claude():
+    needs = []
+    if not has_cmd("claude"):
+        needs.append("CLI not installed")
+    claude_src = REPO / "claude"
+    if claude_src.exists():
+        claude_dst = HOME / ".claude"
+        for f in ["CLAUDE.md", "settings.json"]:
+            src, dst = claude_src / f, claude_dst / f
+            if src.exists() and not dst.exists():
+                needs.append(f"{f} missing")
+    if needs:
+        return True, "; ".join(needs)
+    return False, "Claude Code already installed and configured"
+
+
+@step("claude", "6. Claude Code CLI + config", check=_check_claude)
 def step_claude(dry_run=False, **_):
     section("6. Claude Code")
 
@@ -569,7 +707,19 @@ def step_claude(dry_run=False, **_):
 # ── 7. Fonts ─────────────────────────────────────────────────────────
 
 
-@step("fonts", "7. Fonts (Nerd Font + CJK)")
+def _check_fonts():
+    if not IS_MACOS:
+        return False, "font install via brew is macOS-only"
+    ensure_brew_path()
+    font_casks = ["font-maple-mono-nf", "font-lxgw-wenkai-mono"]
+    missing = [c for c in font_casks
+               if run(f"brew list --cask {c} 2>/dev/null")[0] != 0]
+    if missing:
+        return True, f"{len(missing)} font(s) not installed"
+    return False, "all fonts already installed"
+
+
+@step("fonts", "7. Fonts (Nerd Font + CJK)", check=_check_fonts)
 def step_fonts(dry_run=False, **_):
     section("7. Fonts")
 
@@ -593,7 +743,25 @@ def step_fonts(dry_run=False, **_):
 # ── 8. Hide home folders ─────────────────────────────────────────────
 
 
-@step("hidefolders", "8. Hide unused home folders")
+def _check_hide_folders():
+    if not IS_MACOS:
+        return False, "chflags hidden is macOS-only"
+    folders = ["Applications", "Library", "Movies", "Music", "Pictures", "Public"]
+    visible = []
+    for name in folders:
+        folder = HOME / name
+        if not folder.exists():
+            continue
+        rc, flags = run(f'GetFileInfo -aa "{folder}" 2>/dev/null')
+        # GetFileInfo -aa returns "1" if hidden flag set
+        if rc != 0 or flags.strip() != "1":
+            visible.append(name)
+    if visible:
+        return True, f"{len(visible)} folder(s) not yet hidden"
+    return False, "all folders already hidden"
+
+
+@step("hidefolders", "8. Hide unused home folders", check=_check_hide_folders)
 def step_hide_folders(dry_run=False, **_):
     section("8. Hide Home Folders")
 
@@ -625,7 +793,26 @@ def step_hide_folders(dry_run=False, **_):
 # ── 9. Ollama models ─────────────────────────────────────────────────
 
 
-@step("ollama", "9. Ollama models (optional, slow)")
+def _check_ollama():
+    models_file = REPO / "ollama_models.txt"
+    if not models_file.exists():
+        return False, "ollama_models.txt not found"
+    if not has_cmd("ollama"):
+        return False, "ollama not installed"
+    rc, out = run("ollama list 2>/dev/null")
+    if rc != 0:
+        return True, "ollama not running (start it first)"
+    installed = set(out.splitlines()[1:])  # skip header
+    installed_names = {l.split()[0] for l in installed if l.strip()}
+    lines = models_file.read_text().splitlines()
+    needed = [l.split()[0] for l in lines[1:] if l.split()]
+    missing = [m for m in needed if m not in installed_names]
+    if missing:
+        return True, f"{len(missing)} model(s) not pulled"
+    return False, "all Ollama models already present"
+
+
+@step("ollama", "9. Ollama models (optional, slow)", check=_check_ollama)
 def step_ollama(dry_run=False, **_):
     section("9. Ollama Models")
 
@@ -676,7 +863,13 @@ def step_ollama(dry_run=False, **_):
 # ── 10. Chinese CLI help ─────────────────────────────────────────────
 
 
-@step("clihelp", "10. Chinese CLI help (tldr)")
+def _check_clihelp():
+    if has_cmd("tldr"):
+        return False, "tldr already installed"
+    return True, "tldr not installed"
+
+
+@step("clihelp", "10. Chinese CLI help (tldr)", check=_check_clihelp)
 def step_cli_help(dry_run=False, **_):
     section("10. Chinese CLI Help")
 
@@ -760,9 +953,18 @@ examples:
         steps_to_run = [s for s in STEPS if s != "ollama"]
 
     for name in steps_to_run:
-        label, func = STEPS[name]
+        label, func, check_func = STEPS[name]
+
+        # Pre-check: skip steps where nothing needs to be done
+        if check_func and not args.dry_run:
+            needs, reason = check_func()
+            if not needs:
+                warn(f"skip [{label}]: {reason}")
+                continue
+
         if not args.dry_run and not args.yes:
-            if not confirm(f"Run {label}?"):
+            reason_hint = f" ({reason})" if check_func else ""
+            if not confirm(f"Run {label}?{reason_hint}"):
                 warn(f"skipped: {label}")
                 continue
         func(dry_run=args.dry_run)
