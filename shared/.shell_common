@@ -30,6 +30,10 @@ if [[ "$OS_TYPE" == "Darwin" ]]; then
 
     # Quick Look from terminal
     ql() { qlmanage -p "$*" >& /dev/null; }
+
+    # Encrypted vault (macOS sparse bundle, AES-256)
+    alias vault-open='hdiutil attach ~/d/vault.sparsebundle -mountpoint ~/d/encrypted-backup'
+    alias vault-close='hdiutil detach ~/d/encrypted-backup'
 else
     # --- Oracle Linux 9 ---
     alias rm='rm -iv --preserve-root'
