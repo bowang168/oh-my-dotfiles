@@ -834,7 +834,7 @@ def print_manual_steps():
     """Post-install manual steps that can't be automated."""
     print(f"\n{BOLD}{YELLOW}Manual steps remaining:{RESET}")
     print("  1. Copy ~/.ssh/ and ~/.bashrc_private from encrypted backup")
-    print("  2. Copy ~/d/Personal_AI_Brain/ from encrypted backup")
+    print("  2. Copy ~/d/vault.sparsebundle from encrypted backup, then vault-open")
     print("  3. Install Claude Code: curl -fsSL https://claude.ai/install.sh | bash")
     print("  4. Login: Apple ID / iCloud")
     print("  5. Login: Brave Browser sync")

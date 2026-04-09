@@ -1,0 +1,5 @@
+NAME                    ID              SIZE      MODIFIED   
+qwen3-coder:30b         06c1097efce0    18 GB     4 days ago    
+qwen3-embedding:0.6b    ac6da0dfba84    639 MB    4 days ago    
+minicpm-v:8b            c92bfad01205    5.5 GB    4 days ago    
+qwen3-embedding:8b      64b933495768    4.7 GB    4 days ago

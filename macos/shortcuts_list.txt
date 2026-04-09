@@ -1,0 +1,44 @@
+E-Finder
+Finder_Folder_Dev-??
+S-AreoSpace toggle
+B-Brave
+O-Obisidian
+J - oqo.py
+U - oqo.py --no-open
+T-Typora
+Y - oqo.py --one-value
+C-Center-Window!
+L-CotEditor
+K-TextEdit
+N-Notes
+D-Desktop!
+Y-Ghostty
+F-Fill-Window!
+R-Restore-Window!
+Enter_then_i-Ghostty
+A-Applications!
+G-GoogleChrome
+H-Hide Window (Minimize)!
+Space-InputMethod!
+创建录音
+停用 将文本转为简体中文
+停用 Circle Window Half
+停用 Wolai  快速拆分
+停用 Y-ABC-Input
+停用 P-Pinyin-Input
+停用 J-Calendar-Jihua
+停用 I-Contacts
+停用 S-Safari
+停用 A-Cisco Secure Client-Toggle
+居家和外出设置
+开始工作
+Open Shortcut
+打开“日历”
+休息一下
+用信息发送最新的一张照片
+Shazam 快捷指令
+What’s a shortcut?
+Take a Break
+Text Last Image
+Shazam shortcut
+快捷指令是什么？

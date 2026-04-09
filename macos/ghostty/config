@@ -5,8 +5,8 @@ font-thicken = true
 
 # === 主题 ===
 # 固定 dark 主题（避免 quick terminal 误用 light theme）
-#theme = Catppuccin Mocha
-theme = Catppuccin Latte
+theme = Catppuccin Mocha
+#theme = Catppuccin Latte
 
 # === 窗口 ===
 window-padding-x = 8

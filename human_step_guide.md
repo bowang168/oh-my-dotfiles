@@ -31,8 +31,8 @@ cp ~/.bashrc_private /Volumes/ENCRYPTED_USB/manual_backup/
 # Claude Code 配置 (含 API key、memory、项目设置)
 cp -r ~/.claude/ /Volumes/ENCRYPTED_USB/manual_backup/claude/
 
-# Personal AI Brain
-cp -r ~/d/Personal_AI_Brain/ /Volumes/ENCRYPTED_USB/manual_backup/Personal_AI_Brain/
+# Encrypted vault (contains Personal AI Brain + Media + Qdrant)
+cp -r ~/d/vault.sparsebundle /Volumes/ENCRYPTED_USB/manual_backup/vault.sparsebundle
 ```
 
 ### 1.3 手动备份字体 (macOS)
@@ -108,9 +108,10 @@ cp /Volumes/ENCRYPTED_USB/manual_backup/.bashrc_private ~/
 # Claude Code
 cp -r /Volumes/ENCRYPTED_USB/manual_backup/claude/ ~/.claude/
 
-# Personal AI Brain
+# Encrypted vault (contains Personal AI Brain + Media + Qdrant)
 mkdir -p ~/d
-cp -r /Volumes/ENCRYPTED_USB/manual_backup/Personal_AI_Brain/ ~/d/Personal_AI_Brain/
+cp -r /Volumes/ENCRYPTED_USB/manual_backup/vault.sparsebundle ~/d/vault.sparsebundle
+# Then: vault-open to mount
 ```
 
 ### 2.4 安装 Claude Code

@@ -16,7 +16,7 @@ plugins=(
 #    fzf
     colorize
     zsh-syntax-highlighting
-#    zsh-autosuggestions
+    zsh-autosuggestions
 )
 
 source "$ZSH/oh-my-zsh.sh"

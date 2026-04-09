@@ -31,9 +31,17 @@ if [[ "$OS_TYPE" == "Darwin" ]]; then
     # Quick Look from terminal
     ql() { qlmanage -p "$*" >& /dev/null; }
 
-    # Encrypted vault (macOS sparse bundle, AES-256)
+    # Encrypted vault (macOS sparse bundle, AES-256, 4GB APFS)
     alias vault-open='hdiutil attach ~/d/vault.sparsebundle -mountpoint ~/d/encrypted-backup'
     alias vault-close='hdiutil detach ~/d/encrypted-backup'
+    vault-status() {
+        if mount | grep -q "encrypted-backup"; then
+            echo "vault: OPEN (mounted at ~/d/encrypted-backup)"
+            df -h ~/d/encrypted-backup | tail -1 | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
+        else
+            echo "vault: CLOSED"
+        fi
+    }
 else
     # --- Oracle Linux 9 ---
     alias rm='rm -iv --preserve-root'
@@ -57,6 +65,30 @@ if command -v eza &>/dev/null; then
     alias l2='eza -T -L2 --group-directories-first'
     alias l3='eza -T -L3 --group-directories-first'
     alias l4='eza -T -L4 --group-directories-first'
+
+    # Toggle eza on/off in current session (affects ls/ll/la/cd etc.)
+    toggle_eza() {
+        if alias ls 2>/dev/null | grep -q eza; then
+            unalias ls ll la l. lf lr lt l2 l3 l4 2>/dev/null
+            alias ll='ls -lhF'; alias la='ls -lha'; alias l.='ls -d .*'
+            cd() { builtin cd "$@" && command ls -lh; }
+            echo "eza OFF — using system ls"
+        else
+            alias ls='eza --group-directories-first'
+            alias ll='eza -lh  --group-directories-first --git --icons'
+            alias la='eza -lha --group-directories-first --git --icons'
+            alias l.='eza -d .* --group-directories-first'
+            alias lf='eza -lhD'
+            alias lr='eza -lhT -L2 --group-directories-first --git'
+            alias lt='eza -la --icons --tree --level=2'
+            alias l2='eza -T -L2 --group-directories-first'
+            alias l3='eza -T -L3 --group-directories-first'
+            alias l4='eza -T -L4 --group-directories-first'
+            cd() { builtin cd "$@" && ls -lh; }
+            echo "eza ON"
+        fi
+    }
+
 elif [[ "$OS_TYPE" == "Darwin" ]]; then
     alias ll='ls -lhF'
     alias la='ls -lha'
@@ -154,6 +186,34 @@ alias dig='dig +noall +answer'
 alias gs='git status'
 alias glo='git log --oneline -20'
 alias lg='lazygit'
+
+# Claude Code
+alias cl='claude'
+alias clr='claude --resume'
+alias cld='claude --dangerously-skip-permissions'
+alias cldr='claude --dangerously-skip-permissions --resume'
+
+# Backup Claude Code config → ~/Downloads/claude-backup.zip
+clbackup() {
+    local dest="$HOME/Downloads/claude-backup.zip"
+    local src="$HOME/.claude"
+    rm -f "$dest"
+    zip -r "$dest" \
+        "$src/CLAUDE.md" \
+        "$src/settings.json" \
+        "$src/statusline-command.sh" \
+        "$src/commands" \
+        "$src/skills" \
+        "$src/memory" \
+        "$src/plugins/installed_plugins.json" \
+        "$src/projects/*/memory" \
+        "$src/projects/*/.claude/settings.local.json" \
+        -x '*.DS_Store' 2>/dev/null
+    # Include project CLAUDE.md files
+    find "$src/projects" -maxdepth 2 -name 'CLAUDE.md' -print0 2>/dev/null \
+        | xargs -0 zip "$dest" 2>/dev/null
+    echo "Backed up to $dest ($(du -h "$dest" | cut -f1))"
+}
 
 # System utilities
 alias ports='lsof -i -P -n | grep LISTEN'
