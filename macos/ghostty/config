@@ -10,6 +10,7 @@ font-thicken = true
 #theme = CLRS
 #theme = Modus Operandi
 theme = Modus Vivendi
+background = 171421
 
 # === 窗口 ===
 window-padding-x = 8
