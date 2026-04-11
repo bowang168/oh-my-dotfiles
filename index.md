@@ -98,7 +98,6 @@ Affects: system appearance, Neovim, zsh highlighting, terminal.
 | Content | Method | Why |
 |---------|--------|-----|
 | Dotfiles & configs | Git (this repo) | Version control |
-| User data (`~/d/`) | Syncthing P2P | Real-time, no server |
 | Secrets | Manual copy | Security |
 
 ---

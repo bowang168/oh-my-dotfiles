@@ -129,7 +129,6 @@ git add -A && git commit -m 'backup' && git push
 | 内容 | 方式 | 原因 |
 |------|------|------|
 | Dotfiles 和配置 | **Git** (本仓库) | 版本控制，可 diff 审查 |
-| 用户数据 (`~/d/`) | **Syncthing** P2P | 实时同步，无需服务器 |
 | 密钥 (`.bashrc_private`, `.ssh/`) | **手动复制** | 安全性 |
 
 ## 主题切换

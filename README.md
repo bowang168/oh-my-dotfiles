@@ -129,7 +129,6 @@ git add -A && git commit -m 'backup' && git push
 | Content | Method | Why |
 |---------|--------|-----|
 | Dotfiles & configs | **Git** (this repo) | Version control, diff review |
-| User data (`~/d/`) | **Syncthing** P2P | Real-time sync, no server |
 | Secrets (`.bashrc_private`, `.ssh/`) | **Manual copy** | Security |
 
 ## Theme

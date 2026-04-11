@@ -5,8 +5,11 @@ font-thicken = true
 
 # === 主题 ===
 # 固定 dark 主题（避免 quick terminal 误用 light theme）
-theme = Catppuccin Mocha
+#theme = Catppuccin Mocha
 #theme = Catppuccin Latte
+#theme = CLRS
+#theme = Modus Operandi
+theme = Modus Vivendi
 
 # === 窗口 ===
 window-padding-x = 8
@@ -40,6 +43,9 @@ macos-option-as-alt = true
 macos-icon = custom-style
 macos-icon-ghost-color = #cba6f7
 macos-icon-screen-color = #1e1e2e
+
+# Shift+Enter 换行（发送和 Alt+Enter 相同的 ESC+CR）
+keybind = shift+enter=text:\x1b\x0d
 
 # Hyper 键组合透传给 macOS（避免被终端捕获）
 keybind = ctrl+shift+alt+super+enter=ignore
