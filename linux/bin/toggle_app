@@ -1,71 +1,152 @@
 #!/usr/bin/env bash
 # MIT License - Copyright (c) 2025 Bo Wang
-
+#
 # Toggle and focus a target application window.
 # Launches it if not running; minimizes it if already focused.
 # Usage: toggle_app <WM_CLASS or command>
 # Example: toggle_app gnome-terminal
-# Dependencies: xdotool, wmctrl
+#
+# Dependencies:
+#   X11:     xdotool, wmctrl
+#   Wayland: GNOME Shell with the "Window Calls" extension
+#            (https://extensions.gnome.org/extension/4724/window-calls/
+#             UUID: window-calls@domandoman.xyz)
+#            plus python3 for JSON parsing.
 
 set -euo pipefail
 
-# Target application (WM_CLASS or launch command). Defaults to gnome-terminal.
 my_term=${1:-gnome-terminal}
 
-# Track whether the app was just launched
-was_just_launched=false
-
-# Find window IDs matching the target application (ignore errors if none found)
-window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
-
-# If no matching windows, try to launch the application
-if [[ -z "$window_ids" ]]; then
-    was_just_launched=true
+launch_app() {
     nohup "$my_term" >/dev/null 2>&1 &
-    # Wait briefly for the window to appear
-    for i in 1 2 3 4 5; do
-        sleep 0.2
-        window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
-        [[ -n "$window_ids" ]] && break
-    done
-fi
+}
 
-# If just launched, focus the new window and exit
-if [[ "$was_just_launched" == true ]]; then
-    # Allow time for the window to fully load
-    sleep 0.3
-    # Focus the first matching window
-    first_id=$(printf '%s\n' "$window_ids" | head -n1)
-    if [[ -n "$first_id" ]]; then
-        xdotool windowactivate "$first_id"
+###############################################################################
+# Wayland backend (GNOME Shell + Window Calls)
+###############################################################################
+
+WCE_DEST="org.gnome.Shell"
+WCE_PATH="/org/gnome/Shell/Extensions/Windows"
+WCE_IFACE="org.gnome.Shell.Extensions.Windows"
+
+wce_call() {
+    gdbus call --session --dest "$WCE_DEST" --object-path "$WCE_PATH" \
+        --method "$WCE_IFACE.$1" "${@:2}" 2>/dev/null
+}
+
+# Print the raw JSON payload from List(); return 1 if extension is unavailable.
+wce_list_json() {
+    local out
+    out=$(wce_call List) || return 1
+    python3 -c 'import sys, ast
+s = sys.stdin.read().strip()
+t = ast.literal_eval(s)
+sys.stdout.write(t[0] if isinstance(t, tuple) else t)' <<<"$out"
+}
+
+# Print "<id> <focus>" (focus = 0|1) for each window matching $1 by wm_class
+# (case-insensitive substring against wm_class and wm_class_instance).
+wce_find() {
+    local cls=$1 json
+    json=$(wce_list_json) || return 1
+    CLS="$cls" python3 -c '
+import json, os, sys
+cls = os.environ["CLS"].lower()
+for w in json.loads(sys.stdin.read()):
+    classes = (w.get("wm_class") or "", w.get("wm_class_instance") or "")
+    if any(cls in c.lower() for c in classes):
+        print(w["id"], 1 if w.get("focus") else 0)
+' <<<"$json"
+}
+
+toggle_wayland() {
+    if ! wce_list_json >/dev/null; then
+        echo "toggle_app: 'Window Calls' GNOME extension not available." >&2
+        echo "  Install: https://extensions.gnome.org/extension/4724/window-calls/" >&2
+        echo "  UUID:    window-calls@domandoman.xyz" >&2
+        echo "  Launching '$my_term' without focus/minimize support." >&2
+        launch_app
+        return 0
     fi
-    exit 0
-fi
 
-# Get the currently focused window ID (ignore errors if none)
-focused_window_id=$(xdotool getwindowfocus 2>/dev/null || true)
+    local matches first_id focused_id
+    matches=$(wce_find "$my_term" || true)
 
-# Check if the focused window belongs to the target application
-is_target_focused=false
-if [[ -n "$focused_window_id" && -n "$window_ids" ]]; then
-    while read -r wid; do
-        if [[ "$wid" == "$focused_window_id" ]]; then
-            is_target_focused=true
-            break
-        fi
-    done <<< "$window_ids"
-fi
+    if [[ -z "$matches" ]]; then
+        launch_app
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 0.2
+            matches=$(wce_find "$my_term" || true)
+            [[ -n "$matches" ]] && break
+        done
+        [[ -z "$matches" ]] && return 0
+        sleep 0.3
+        first_id=$(awk 'NR==1{print $1}' <<<"$matches")
+        wce_call Activate "$first_id" >/dev/null
+        return 0
+    fi
 
-if [[ "$is_target_focused" == true ]]; then
-    # Target is already focused -- minimize it
-    xdotool windowminimize "$focused_window_id"
-else
-    # Switch to the target window (wmctrl -x -R matches by WM_CLASS)
-    if ! wmctrl -x -R "$my_term" 2>/dev/null; then
-        # Fallback: activate the first matching window ID directly
+    focused_id=$(awk '$2==1{print $1; exit}' <<<"$matches")
+    if [[ -n "$focused_id" ]]; then
+        wce_call Minimize "$focused_id" >/dev/null
+    else
+        first_id=$(awk 'NR==1{print $1}' <<<"$matches")
+        wce_call Activate "$first_id" >/dev/null
+    fi
+}
+
+###############################################################################
+# X11 backend (xdotool + wmctrl)
+###############################################################################
+
+toggle_x11() {
+    local was_just_launched=false
+    local window_ids first_id focused_window_id is_target_focused=false
+
+    window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
+
+    if [[ -z "$window_ids" ]]; then
+        was_just_launched=true
+        launch_app
+        for _ in 1 2 3 4 5; do
+            sleep 0.2
+            window_ids=$(xdotool search --class "$my_term" 2>/dev/null || true)
+            [[ -n "$window_ids" ]] && break
+        done
+    fi
+
+    if [[ "$was_just_launched" == true ]]; then
+        sleep 0.3
         first_id=$(printf '%s\n' "$window_ids" | head -n1)
-        if [[ -n "$first_id" ]]; then
-            xdotool windowactivate "$first_id"
+        [[ -n "$first_id" ]] && xdotool windowactivate "$first_id"
+        return 0
+    fi
+
+    focused_window_id=$(xdotool getwindowfocus 2>/dev/null || true)
+    if [[ -n "$focused_window_id" && -n "$window_ids" ]]; then
+        while read -r wid; do
+            if [[ "$wid" == "$focused_window_id" ]]; then
+                is_target_focused=true
+                break
+            fi
+        done <<<"$window_ids"
+    fi
+
+    if [[ "$is_target_focused" == true ]]; then
+        xdotool windowminimize "$focused_window_id"
+    else
+        if ! wmctrl -x -R "$my_term" 2>/dev/null; then
+            first_id=$(printf '%s\n' "$window_ids" | head -n1)
+            [[ -n "$first_id" ]] && xdotool windowactivate "$first_id"
         fi
     fi
-fi
+}
+
+###############################################################################
+# Dispatch
+###############################################################################
+
+case "${XDG_SESSION_TYPE:-}" in
+    wayland) toggle_wayland ;;
+    *)       toggle_x11 ;;
+esac
