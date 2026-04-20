@@ -652,7 +652,7 @@ def _check_fonts():
     if not IS_MACOS:
         return False, "font install via brew is macOS-only"
     ensure_brew_path()
-    font_casks = ["font-maple-mono-nf", "font-lxgw-wenkai-mono"]
+    font_casks = []
     missing = [c for c in font_casks
                if run(f"brew list --cask {c} 2>/dev/null")[0] != 0]
     if missing:
@@ -669,7 +669,7 @@ def step_fonts(dry_run=False, **_):
         return
 
     ensure_brew_path()
-    font_casks = ["font-maple-mono-nf", "font-lxgw-wenkai-mono"]
+    font_casks = []
     for cask in font_casks:
         rc, _ = run(f"brew list --cask {cask} 2>/dev/null")
         if rc == 0:
