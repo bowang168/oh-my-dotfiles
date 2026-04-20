@@ -26,5 +26,10 @@ tmux
 xdotool
 wmctrl
 
+# Build deps (for keyd — install.py builds it from source)
+gcc
+make
+
 # Key remapping
-# keyd — build from source, see docs/ol9-shortcuts.md
+# keyd is built + installed by install.py's `keyd` step.
+# Config lives at linux/keyd/default.conf; deployed to /etc/keyd/default.conf.

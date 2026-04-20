@@ -84,6 +84,46 @@ def ensure_brew_path():
         os.environ["PATH"] = f"{brew_bin}:{os.environ['PATH']}"
 
 
+def _has_ssh_keys():
+    """True if ~/.ssh/ contains at least one common private key."""
+    ssh_dir = HOME / ".ssh"
+    if not ssh_dir.is_dir():
+        return False
+    return any((ssh_dir / k).exists() for k in
+               ("id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"))
+
+
+def _gitconfig_rewrites_github_to_ssh():
+    """True if ~/.gitconfig has url.git@github.com:.insteadOf = https://github.com/."""
+    rc, out = run('git config --global --get-all "url.git@github.com:.insteadOf"')
+    return rc == 0 and "https://github.com" in out
+
+
+def _git_clone_env():
+    """Env dict for git clone. Bypasses ~/.gitconfig `insteadOf` HTTPS→SSH
+    rewrites when ~/.ssh/ has no keys, so HTTPS clones succeed on a fresh box."""
+    env = os.environ.copy()
+    if not _has_ssh_keys() and _gitconfig_rewrites_github_to_ssh():
+        empty = Path("/tmp/.oh-my-dotfiles-empty-gitconfig")
+        empty.touch()
+        env["GIT_CONFIG_GLOBAL"] = str(empty)
+        env["GIT_CONFIG_SYSTEM"] = "/dev/null"
+    return env
+
+
+def git_clone(url, target, dry_run=False):
+    """Clone a repo, transparently bypassing the gitconfig insteadOf rewrite
+    when SSH keys are unavailable. Returns (returncode, message)."""
+    target = Path(target)
+    if target.exists():
+        return 0, f"exists: {target}"
+    if dry_run:
+        return 0, f"[dry-run] git clone {url} -> {target}"
+    env = _git_clone_env()
+    r = subprocess.run(["git", "clone", url, str(target)], env=env)
+    return r.returncode, f"cloned {url} -> {target}" if r.returncode == 0 else f"clone failed: {url}"
+
+
 # ── File operations ──────────────────────────────────────────────────
 
 BACKUP_DIR = None
@@ -461,8 +501,10 @@ def step_omz(dry_run=False, **_):
     if not omz_dir.exists():
         info("Installing Oh My Zsh ...")
         if not dry_run:
-            run_visible(
-                'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+            env = _git_clone_env()
+            subprocess.run(
+                'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended --keep-zshrc',
+                shell=True, env=env,
             )
     else:
         info("Oh My Zsh already installed")
@@ -491,14 +533,16 @@ def step_omz(dry_run=False, **_):
         if target.exists():
             info(f"plugin exists: {name}")
             continue
-        if dry_run:
-            info(f"[dry-run] git clone {name}")
-            continue
-        rc = run_visible(f'git clone "{url}" "{target}"')
+        # plugins.txt uses git@github.com: URLs; rewrite to HTTPS so the
+        # SSH-less override in git_clone() can take effect.
+        clone_url = url
+        if clone_url.startswith("git@github.com:"):
+            clone_url = "https://github.com/" + clone_url[len("git@github.com:"):]
+        rc, msg = git_clone(clone_url, target, dry_run=dry_run)
         if rc == 0:
             info(f"installed plugin: {name}")
         else:
-            error(f"plugin failed: {name}")
+            error(f"plugin failed: {name} ({msg})")
 
 
 # ── 4. macOS defaults ────────────────────────────────────────────────
@@ -801,7 +845,87 @@ def step_ollama(dry_run=False, **_):
             error(f"pull failed: {m}")
 
 
-# ── 9. Chinese CLI help ──────────────────────────────────────────────
+# ── 9. keyd (CapsLock → Esc/Super on Linux) ─────────────────────────
+
+
+KEYD_SRC_DIR = Path("/tmp/keyd-build")
+KEYD_CONFIG = Path("/etc/keyd/default.conf")
+
+
+def _check_keyd():
+    if IS_MACOS:
+        return False, "keyd is Linux-only (use Hyperkey on macOS)"
+    src_conf = REPO / "linux" / "keyd" / "default.conf"
+    if not src_conf.exists():
+        return False, "linux/keyd/default.conf not found"
+
+    reasons = []
+    if not has_cmd("keyd"):
+        reasons.append("keyd binary missing")
+    if not KEYD_CONFIG.exists():
+        reasons.append(f"{KEYD_CONFIG} missing")
+    elif KEYD_CONFIG.read_text() != src_conf.read_text():
+        reasons.append(f"{KEYD_CONFIG} differs from repo")
+    rc, _ = run("systemctl is-active keyd")
+    if rc != 0:
+        reasons.append("keyd.service not active")
+    if reasons:
+        return True, "; ".join(reasons)
+    return False, "keyd installed, config matches, service active"
+
+
+@step("keyd", "9. keyd (CapsLock → Esc tap / Super hold)", check=_check_keyd)
+def step_keyd(dry_run=False, **_):
+    section("9. keyd")
+
+    if IS_MACOS:
+        warn("keyd is Linux-only")
+        return
+
+    src_conf = REPO / "linux" / "keyd" / "default.conf"
+    if not src_conf.exists():
+        warn("linux/keyd/default.conf not found")
+        return
+
+    # 1. Build + install keyd if missing
+    if not has_cmd("keyd"):
+        if dry_run:
+            info(f"[dry-run] clone rvaiya/keyd -> {KEYD_SRC_DIR}, make, sudo make install")
+        else:
+            if KEYD_SRC_DIR.exists():
+                shutil.rmtree(KEYD_SRC_DIR)
+            rc, msg = git_clone("https://github.com/rvaiya/keyd.git", KEYD_SRC_DIR)
+            if rc != 0:
+                error(msg)
+                return
+            rc = run_visible(f'make -C "{KEYD_SRC_DIR}" && sudo make -C "{KEYD_SRC_DIR}" install')
+            if rc != 0:
+                error("keyd build/install failed")
+                return
+            info("keyd built and installed")
+    else:
+        info("keyd already installed")
+
+    # 2. Deploy config
+    if dry_run:
+        info(f"[dry-run] sudo install -Dm644 {src_conf} {KEYD_CONFIG}")
+    else:
+        rc = run_visible(f'sudo install -Dm644 "{src_conf}" "{KEYD_CONFIG}"')
+        if rc != 0:
+            error(f"failed to deploy {KEYD_CONFIG}")
+            return
+        info(f"{KEYD_CONFIG} deployed")
+
+    # 3. Enable + start/reload service
+    if dry_run:
+        info("[dry-run] sudo systemctl enable --now keyd && sudo keyd reload")
+    else:
+        run_visible("sudo systemctl enable --now keyd")
+        run("sudo keyd reload")
+        info("keyd.service enabled + reloaded")
+
+
+# ── 10. Chinese CLI help ─────────────────────────────────────────────
 
 
 def _check_clihelp():
@@ -810,9 +934,9 @@ def _check_clihelp():
     return True, "tldr not installed"
 
 
-@step("clihelp", "9. Chinese CLI help (tldr)", check=_check_clihelp)
+@step("clihelp", "10. Chinese CLI help (tldr)", check=_check_clihelp)
 def step_cli_help(dry_run=False, **_):
-    section("9. Chinese CLI Help")
+    section("10. Chinese CLI Help")
 
     if has_cmd("tldr"):
         info("tldr already installed")
@@ -887,6 +1011,12 @@ examples:
     if args.dry_run:
         print(f"  {YELLOW}*** DRY-RUN MODE ***{RESET}")
     print(f"{'=' * 60}{RESET}")
+
+    if not _has_ssh_keys() and _gitconfig_rewrites_github_to_ssh():
+        print(f"\n{YELLOW}Note:{RESET} ~/.ssh/ has no keys but .gitconfig rewrites "
+              f"github HTTPS → SSH.")
+        print(f"      git clones in this run will bypass the rewrite via "
+              f"GIT_CONFIG_GLOBAL override.")
 
     # Default: run all steps except ollama (slow, needs manual start)
     if args.only:
