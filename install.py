@@ -692,37 +692,63 @@ def step_services(dry_run=False, **_):
 # ── 6. Fonts ──────────────────────────────────────────────────────────
 
 
+FONTS = [
+    {
+        "name": "Maple Mono NF",
+        "url": "https://github.com/subframe7536/maple-font/releases/latest/download/MapleMono-NF.zip",
+        "dir": "MapleMono-NF",
+    },
+]
+
+
+def _font_target_dir():
+    return HOME / "Library" / "Fonts" if IS_MACOS else HOME / ".local" / "share" / "fonts"
+
+
+def _font_installed(font):
+    target = _font_target_dir() / font["dir"]
+    return target.exists() and any(target.glob("*.ttf"))
+
+
 def _check_fonts():
-    if not IS_MACOS:
-        return False, "font install via brew is macOS-only"
-    ensure_brew_path()
-    font_casks = []
-    missing = [c for c in font_casks
-               if run(f"brew list --cask {c} 2>/dev/null")[0] != 0]
+    missing = [f["name"] for f in FONTS if not _font_installed(f)]
     if missing:
-        return True, f"{len(missing)} font(s) not installed"
+        return True, f"missing: {', '.join(missing)}"
     return False, "all fonts already installed"
 
 
-@step("fonts", "6. Fonts (Nerd Font + CJK)", check=_check_fonts)
+@step("fonts", "6. Fonts", check=_check_fonts)
 def step_fonts(dry_run=False, **_):
     section("6. Fonts")
 
-    if not IS_MACOS:
-        warn("font install via brew is macOS-only")
-        return
+    target_dir = _font_target_dir()
+    target_dir.mkdir(parents=True, exist_ok=True)
 
-    ensure_brew_path()
-    font_casks = []
-    for cask in font_casks:
-        rc, _ = run(f"brew list --cask {cask} 2>/dev/null")
-        if rc == 0:
-            info(f"{cask} already installed")
+    installed_any = False
+    for font in FONTS:
+        if _font_installed(font):
+            info(f'{font["name"]} already installed')
+            continue
+        dest = target_dir / font["dir"]
+        if dry_run:
+            info(f'[dry-run] download {font["name"]} -> {dest}')
+            continue
+        info(f'installing {font["name"]} -> {dest}')
+        rc = run_visible(
+            f'tmp=$(mktemp -d) && '
+            f'curl -fsSL -o "$tmp/f.zip" "{font["url"]}" && '
+            f'mkdir -p "{dest}" && '
+            f'unzip -oq "$tmp/f.zip" -d "{dest}" && '
+            f'rm -rf "$tmp"'
+        )
+        if rc != 0:
+            error(f'failed to install {font["name"]}')
         else:
-            if dry_run:
-                info(f"[dry-run] brew install --cask {cask}")
-            else:
-                run_visible(f"brew install --cask {cask}")
+            installed_any = True
+
+    if installed_any and not IS_MACOS and has_cmd("fc-cache"):
+        run_visible(f'fc-cache -f "{target_dir}"')
+        info("fc-cache refreshed")
 
 
 # ── 7. Hide home folders ─────────────────────────────────────────────
