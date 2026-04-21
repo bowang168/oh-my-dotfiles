@@ -46,7 +46,7 @@ fi
 export OLLAMA_ORIGINS="app://obsidian.md*"
 
 # --- Default working directory ---
-[[ "$PWD" == "$HOME" ]] && cd ~/dev
+[[ "$PWD" == "$HOME" ]] && builtin cd ~/dev
 
 # Override oh-my-zsh 'l' alias
 alias l='\ls'
