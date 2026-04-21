@@ -50,6 +50,47 @@ else
 fi
 
 # ----------------------------------------------------------------------------
+# Portable exFAT USB disk — /u01 helpers
+#   macOS: /u01 is a synthetic.conf symlink → /Volumes/u01 (FSKit auto-mounts)
+#   Linux: /u01 is an x-systemd.automount target in /etc/fstab
+# ----------------------------------------------------------------------------
+
+if [[ "$OS_TYPE" == "Darwin" ]]; then
+    u01-mount() {
+        local dev
+        dev=$(diskutil list | awk '/Microsoft Basic Data u01/{print "/dev/"$NF; exit}')
+        [[ -z "$dev" ]] && { echo "u01 disk not found — plug it in?" >&2; return 1; }
+        diskutil mount "$dev" && echo "mounted → /u01"
+    }
+    u01-umount() {
+        diskutil unmount /u01 && echo "safe to unplug"
+    }
+    u01-eject() {
+        local part
+        part=$(diskutil list | awk '/Microsoft Basic Data u01/{print $NF; exit}')
+        [[ -z "$part" ]] && { echo "u01 disk not found" >&2; return 1; }
+        local dev="/dev/${part%s[0-9]*}"
+        diskutil eject "$dev" && echo "safe to unplug ($dev)"
+    }
+else
+    u01-mount() {
+        ls /u01 >/dev/null 2>&1 && findmnt /u01
+    }
+    u01-umount() {
+        sudo umount /u01 && sync && echo "safe to unplug"
+    }
+    u01-eject() {
+        local part
+        part=$(findmnt -n -o SOURCE /u01 2>/dev/null || blkid -L u01 2>/dev/null)
+        [[ -z "$part" ]] && { echo "u01 not found" >&2; return 1; }
+        local dev="/dev/$(lsblk -no pkname "$part")"
+        sudo umount /u01 2>/dev/null
+        sync
+        sudo udisksctl power-off -b "$dev" && echo "safe to unplug ($dev)"
+    }
+fi
+
+# ----------------------------------------------------------------------------
 # Listing — eza (preferred) with fallback to system ls
 #   eza: https://github.com/eza-community/eza
 # ----------------------------------------------------------------------------
