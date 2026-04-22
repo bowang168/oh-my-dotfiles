@@ -272,6 +272,20 @@ clbackup() {
     echo "Backed up to $dest ($(du -h "$dest" | cut -f1))"
 }
 
+# Remove macOS noise files (._* AppleDouble + .DS_Store) recursively
+# Usage: macclean [path]   (defaults to current dir)
+macclean() {
+    local target="${1:-.}"
+    local count
+    count=$(find "$target" -type f \( -name '._*' -o -name '.DS_Store' \) 2>/dev/null | wc -l)
+    if [ "$count" -eq 0 ]; then
+        echo "clean: no macOS noise files in $target"
+        return
+    fi
+    find "$target" -type f \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null
+    echo "removed $count macOS noise files from $target"
+}
+
 # System utilities
 alias ports='lsof -i -P -n | grep LISTEN'
 [[ "$OS_TYPE" == "Darwin" ]] && alias ip='curl -s ifconfig.me'
