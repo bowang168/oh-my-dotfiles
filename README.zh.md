@@ -3,7 +3,7 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/bowang168)
 [![Sponsor](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/bowang168)
 
-跨平台 dotfiles 与配置管理，支持 **macOS** + **Oracle Linux 9**。
+跨平台 dotfiles 与配置管理，支持 **macOS** + **Oracle Linux 9 / 10**。
 
 两个脚本搞定一切：
 
@@ -40,11 +40,11 @@ oh-my-dotfiles/
 │   ├── omz-custom/      # Oh My Zsh 插件列表
 │   └── docs/            # macOS 指南
 │
-├── linux/               # 仅 Oracle Linux 9
+├── linux/               # Oracle Linux 9 / 10
 │   ├── packages.txt     # dnf 软件包
 │   ├── kitty.conf       # Kitty 终端
 │   ├── gnome-terminal-profiles.dconf
-│   ├── bin/toggle_app   # 窗口切换 (xdotool)
+│   ├── bin/toggle_app   # 窗口切换 (Wayland + X11)
 │   └── docs/            # Linux 指南
 │
 ├── claude/              # Claude Code 配置 (备份后生成)
@@ -75,6 +75,24 @@ python3 install.py --dry-run
 
 # 5. 只执行指定步骤
 python3 install.py --only prereqs brew configs omz
+```
+
+**Oracle Linux 10 先决条件** —— 运行 `install.py` 之前先启用 EPEL 和
+CodeReady Builder，否则基础仓库中缺少大部分 CLI 工具：
+
+```bash
+sudo dnf install -y oracle-epel-release-el10
+sudo dnf config-manager --enable ol10_u1_developer_EPEL ol10_codeready_builder
+```
+
+以下工具 EPEL10 中也没有 —— 从上游安装：
+
+```bash
+# eza, git-delta: 从 GitHub releases 下载二进制到 ~/.local/bin
+# starship:
+curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin -y
+# zoxide:
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh -s -- --bin-dir ~/.local/bin
 ```
 
 ### 现有系统 (备份)

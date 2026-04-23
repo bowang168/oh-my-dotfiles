@@ -243,13 +243,59 @@ def step(name, label, check=None):
 # ── 0. Prerequisites ─────────────────────────────────────────────────
 
 
+def _ol_major_version():
+    """Return Oracle Linux major version ('9', '10', ...) or None if not OL."""
+    try:
+        content = Path("/etc/os-release").read_text()
+    except OSError:
+        return None
+    kv = {}
+    for line in content.splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            kv[k.strip()] = v.strip().strip('"')
+    if kv.get("ID") != "ol":
+        return None
+    ver = kv.get("VERSION_ID", "")
+    return ver.split(".")[0] if ver else None
+
+
+def _epel_enabled():
+    """True if an enabled repo looks like EPEL (Oracle's developer_EPEL or generic epel)."""
+    rc, out = run("dnf repolist 2>/dev/null")
+    if rc != 0:
+        return False
+    low = out.lower()
+    return "_developer_epel" in low or "\nepel " in low or out.startswith("epel ")
+
+
+def _find_repos_by_suffix(*suffixes):
+    """Return enabled-or-disabled repo ids whose name ends with any suffix."""
+    rc, out = run("dnf repolist --all 2>/dev/null")
+    if rc != 0:
+        return []
+    found = []
+    for line in out.splitlines():
+        parts = line.split()
+        if not parts:
+            continue
+        repo_id = parts[0]
+        if any(repo_id.endswith(s) for s in suffixes):
+            found.append(repo_id)
+    return found
+
+
 def _check_prereqs():
     if not IS_MACOS:
-        # Linux: just verify git + gh present
+        reasons = []
+        if _ol_major_version() and not _epel_enabled():
+            reasons.append("EPEL/CRB not enabled")
         missing = [t for t in ("git", "gh") if not has_cmd(t)]
         if missing:
-            return True, f"missing: {', '.join(missing)}"
-        return False, "git and gh already installed"
+            reasons.append(f"missing: {', '.join(missing)}")
+        if reasons:
+            return True, "; ".join(reasons)
+        return False, "EPEL enabled, git/gh present"
     # macOS: need brew or xcode-select
     rc, _ = run("xcode-select -p")
     if rc != 0:
@@ -264,7 +310,31 @@ def step_prereqs(dry_run=False, **_):
     section("0. Prerequisites")
 
     if not IS_MACOS:
-        info("Linux detected — skipping macOS prerequisites")
+        ol_major = _ol_major_version()
+        if not ol_major:
+            info("Linux (non-Oracle) — skipping EPEL setup")
+            return
+        if _epel_enabled():
+            info(f"EPEL/CRB already enabled (OL{ol_major})")
+            return
+        info(f"Enabling EPEL + CodeReady Builder for OL{ol_major} ...")
+        if dry_run:
+            info(f"[dry-run] sudo dnf install -y oracle-epel-release-el{ol_major}")
+            info("[dry-run] sudo dnf config-manager --enable *_developer_EPEL *_codeready_builder")
+            return
+        rc = run_visible(f"sudo dnf install -y oracle-epel-release-el{ol_major}")
+        if rc != 0:
+            error(f"failed to install oracle-epel-release-el{ol_major}")
+            return
+        repos = _find_repos_by_suffix("_developer_EPEL", "_codeready_builder")
+        if not repos:
+            warn("no EPEL/CRB repo ids found to enable")
+            return
+        rc = run_visible(f"sudo dnf config-manager --enable {' '.join(repos)}")
+        if rc == 0:
+            info(f"enabled: {', '.join(repos)}")
+        else:
+            error(f"failed to enable repos: {', '.join(repos)}")
         return
 
     # Xcode Command Line Tools
@@ -391,6 +461,7 @@ def _check_configs():
     else:
         targets += [
             (REPO / "linux" / "kitty.conf", HOME / ".config" / "kitty" / "kitty.conf"),
+            (REPO / "linux" / "bin" / "obsidian", HOME / ".local" / "bin" / "obsidian"),
         ]
 
     missing = [
@@ -443,6 +514,8 @@ def step_configs(dry_run=False, **_):
                 HOME / ".config" / "kitty" / "kitty.conf", dry_run)
         symlink(REPO / "linux" / "bin" / "toggle_app",
                 HOME / ".local" / "bin" / "toggle_app", dry_run)
+        symlink(REPO / "linux" / "bin" / "obsidian",
+                HOME / ".local" / "bin" / "obsidian", dry_run)
 
     # --- Theme mode (don't overwrite existing preference) ---
     theme_file = HOME / ".theme_mode"
@@ -951,7 +1024,92 @@ def step_keyd(dry_run=False, **_):
         info("keyd.service enabled + reloaded")
 
 
-# ── 10. Chinese CLI help ─────────────────────────────────────────────
+# ── 10. Flatpak apps (Linux only) ───────────────────────────────────
+
+
+def _flatpak_apps():
+    """Read app-ids from linux/flatpaks.txt, skipping blanks + comments."""
+    pkg_file = REPO / "linux" / "flatpaks.txt"
+    if not pkg_file.exists():
+        return []
+    return [l.strip() for l in pkg_file.read_text().splitlines()
+            if l.strip() and not l.startswith("#")]
+
+
+def _check_flatpak():
+    if IS_MACOS:
+        return False, "flatpak is Linux-only (macOS uses Homebrew casks)"
+    apps = _flatpak_apps()
+    if not apps:
+        return False, "linux/flatpaks.txt empty or missing"
+    reasons = []
+    if not has_cmd("flatpak"):
+        reasons.append("flatpak binary missing")
+        return True, "; ".join(reasons)
+    rc, _ = run("flatpak remotes --user | grep -q '^flathub'")
+    if rc != 0:
+        reasons.append("flathub remote missing")
+    rc, out = run("flatpak list --user --app --columns=application")
+    installed = set(out.splitlines()) if rc == 0 else set()
+    missing = [a for a in apps if a not in installed]
+    if missing:
+        reasons.append(f"{len(missing)} app(s) to install")
+    if reasons:
+        return True, "; ".join(reasons)
+    return False, f"flathub + {len(apps)} app(s) already installed"
+
+
+@step("flatpak", "10. Flatpak apps (Linux only)", check=_check_flatpak)
+def step_flatpak(dry_run=False, **_):
+    section("10. Flatpak Apps")
+
+    if IS_MACOS:
+        warn("flatpak is Linux-only")
+        return
+
+    if not has_cmd("flatpak"):
+        warn("flatpak binary missing — run the `brew` step first (installs flatpak via dnf)")
+        return
+
+    apps = _flatpak_apps()
+    if not apps:
+        warn("linux/flatpaks.txt empty or missing")
+        return
+
+    # 1. Ensure flathub remote (user-level install, no sudo needed)
+    rc, _ = run("flatpak remotes --user | grep -q '^flathub'")
+    if rc != 0:
+        if dry_run:
+            info("[dry-run] flatpak remote-add --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo")
+        else:
+            rc = run_visible(
+                "flatpak remote-add --if-not-exists --user flathub "
+                "https://dl.flathub.org/repo/flathub.flatpakrepo"
+            )
+            if rc != 0:
+                error("failed to add flathub remote")
+                return
+            info("flathub remote added")
+    else:
+        info("flathub remote present")
+
+    # 2. Install any missing apps
+    rc, out = run("flatpak list --user --app --columns=application")
+    installed = set(out.splitlines()) if rc == 0 else set()
+    missing = [a for a in apps if a not in installed]
+    if not missing:
+        info(f"all {len(apps)} app(s) already installed")
+        return
+    info(f"{len(missing)} app(s) to install: {', '.join(missing)}")
+    if dry_run:
+        info(f"[dry-run] flatpak install --user -y flathub {' '.join(missing)}")
+        return
+    rc = run_visible(f"flatpak install --user -y flathub {' '.join(missing)}")
+    if rc != 0:
+        error("flatpak install failed")
+
+
+# ── 11. Chinese CLI help ─────────────────────────────────────────────
 
 
 def _check_clihelp():
@@ -960,7 +1118,7 @@ def _check_clihelp():
     return True, "tldr not installed"
 
 
-@step("clihelp", "10. Chinese CLI help (tldr)", check=_check_clihelp)
+@step("clihelp", "11. Chinese CLI help (tldr)", check=_check_clihelp)
 def step_cli_help(dry_run=False, **_):
     section("10. Chinese CLI Help")
 

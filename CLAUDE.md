@@ -57,7 +57,9 @@ oh-my-dotfiles/
 | `fonts` | — | Font installation |
 | `hide_folders` | — | Hide ~/Public etc. on macOS |
 | `ollama` | `ollama` | Ollama model pull / list |
-| `cli_help` | — | Print manual post-install steps |
+| `keyd` | — | Build keyd + deploy Linux config |
+| `flatpak` | — | Add Flathub remote + install apps from `linux/flatpaks.txt` (Linux only) |
+| `clihelp` | — | Install tldr via pip |
 | — | `shortcuts` | Export macOS keyboard shortcuts |
 
 ## Conventions

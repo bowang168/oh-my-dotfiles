@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Wrapper so `toggle_app obsidian` (and other tools) can launch the
+# Flatpak build of Obsidian via the bare `obsidian` command.
+exec flatpak run md.obsidian.Obsidian "$@"

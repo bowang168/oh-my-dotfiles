@@ -1,5 +1,12 @@
-# Oracle Linux 9 — packages to install
+# Oracle Linux 9 / 10 — packages to install
 # Usage: sudo dnf install $(grep -v '^#' packages.txt | tr '\n' ' ')
+#
+# On OL10, enable EPEL + CodeReady Builder first:
+#   sudo dnf install -y oracle-epel-release-el10
+#   sudo dnf config-manager --enable ol10_u1_developer_EPEL ol10_codeready_builder
+#
+# Not in OL10 repos — install from upstream (see README):
+#   eza, git-delta, starship, zoxide
 
 # Shell & terminal
 zsh
@@ -20,10 +27,16 @@ zoxide
 
 # System utilities
 htop
-tmux
 
-# Window management (for toggle_app)
-xdotool
+# Flatpak (GUI app distribution; apps listed in linux/flatpaks.txt)
+flatpak
+
+# GNOME
+gnome-tweaks
+
+# Window management (for toggle_app on X11; wmctrl only — toggle_app uses
+# GNOME "Window Calls" extension on Wayland. xdotool is X11-only and not in
+# EPEL10; install it manually if you need the X11 fallback.)
 wmctrl
 
 # Build deps (for keyd — install.py builds it from source)

@@ -1,0 +1,5 @@
+# Flatpak applications (installed via install.py's `flatpak` step)
+# Format: one Flathub app-id per line. Lines starting with # are ignored.
+# Installed as --user (no sudo needed once flatpak itself is present).
+
+md.obsidian.Obsidian

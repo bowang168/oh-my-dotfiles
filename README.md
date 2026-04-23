@@ -3,7 +3,7 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/bowang168)
 [![Sponsor](https://img.shields.io/badge/GitHub%20Sponsors-sponsor-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/bowang168)
 
-Cross-platform dotfiles & config management for **macOS** + **Oracle Linux 9**.
+Cross-platform dotfiles & config management for **macOS** + **Oracle Linux 9 / 10**.
 
 Two scripts handle everything:
 
@@ -40,11 +40,11 @@ oh-my-dotfiles/
 │   ├── omz-custom/      # Oh My Zsh plugin list
 │   └── docs/            # macOS guides
 │
-├── linux/               # Oracle Linux 9 only
+├── linux/               # Oracle Linux 9 / 10
 │   ├── packages.txt     # dnf packages
 │   ├── kitty.conf       # Kitty terminal
 │   ├── gnome-terminal-profiles.dconf
-│   ├── bin/toggle_app   # Window toggle (xdotool)
+│   ├── bin/toggle_app   # Window toggle (Wayland + X11)
 │   └── docs/            # Linux guides
 │
 ├── claude/              # Claude Code config (after backup)
@@ -75,6 +75,24 @@ python3 install.py --dry-run
 
 # 5. Or run specific steps only
 python3 install.py --only prereqs brew configs omz
+```
+
+**Oracle Linux 10 prereqs** — enable EPEL + CodeReady Builder before running
+`install.py`, since base repos don't carry most of the CLI tools:
+
+```bash
+sudo dnf install -y oracle-epel-release-el10
+sudo dnf config-manager --enable ol10_u1_developer_EPEL ol10_codeready_builder
+```
+
+A few tools aren't in EPEL10 either — install them from upstream:
+
+```bash
+# eza, git-delta: download release binary from GitHub -> ~/.local/bin
+# starship:
+curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin -y
+# zoxide:
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh -s -- --bin-dir ~/.local/bin
 ```
 
 ### Existing machine (backup)
