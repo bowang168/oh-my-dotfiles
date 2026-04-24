@@ -61,6 +61,7 @@ oh-my-dotfiles/
 | `yazi` | — | Download yazi + ya binaries from GitHub release to `~/.local/bin/` (Linux only; macOS uses Brewfile) |
 | `flatpak` | — | Add Flathub remote + install apps from `linux/flatpaks.txt` (Linux only) |
 | `clihelp` | — | Install tldr via pip |
+| `oqo` | — | Clone oracle-quick-open to `~/g/` + symlink `oqo.py` into `~/.local/bin/` |
 | — | `shortcuts` | Export macOS keyboard shortcuts |
 
 ## Conventions

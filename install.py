@@ -1213,6 +1213,41 @@ def step_cli_help(dry_run=False, **_):
         warn("pip3 not found — install tldr manually")
 
 
+# ── 13. oqo (oracle-quick-open) ─────────────────────────────────────
+
+
+OQO_REPO = "git@github.com:bowang168/oracle-quick-open.git"
+OQO_DIR = HOME / "g" / "oracle-quick-open"
+OQO_BIN = HOME / ".local" / "bin" / "oqo.py"
+
+
+def _check_oqo():
+    reasons = []
+    if not (OQO_DIR / "oqo.py").exists():
+        reasons.append(f"{OQO_DIR} not cloned")
+    if not (OQO_BIN.is_symlink() and OQO_BIN.resolve() == (OQO_DIR / "oqo.py").resolve()):
+        reasons.append(f"{OQO_BIN} symlink missing")
+    if reasons:
+        return True, "; ".join(reasons)
+    return False, "oqo cloned + symlinked"
+
+
+@step("oqo", "13. oqo (oracle-quick-open CLI)", check=_check_oqo)
+def step_oqo(dry_run=False, **_):
+    section("13. oqo (oracle-quick-open)")
+
+    if not (OQO_DIR / "oqo.py").exists():
+        rc, msg = git_clone(OQO_REPO, OQO_DIR, dry_run=dry_run)
+        if rc != 0:
+            error(msg)
+            return
+        info(msg)
+    else:
+        info(f"repo already present at {OQO_DIR}")
+
+    symlink(OQO_DIR / "oqo.py", OQO_BIN, dry_run)
+
+
 # ══════════════════════════════════════════════════════════════════════
 #  Main
 # ══════════════════════════════════════════════════════════════════════
