@@ -636,10 +636,7 @@ def step_omz(dry_run=False, **_):
 
 def _check_defaults():
     if not IS_MACOS:
-        dconf_file = REPO / "linux" / "gnome-terminal-profiles.dconf"
-        if not has_cmd("dconf") or not dconf_file.exists():
-            return False, "dconf not available or no profile file"
-        return True, "GNOME terminal profiles to load"
+        return False, "macOS defaults step is macOS-only (Linux uses `dconf` step)"
     defaults_dir = REPO / "macos" / "defaults"
     if not defaults_dir.exists():
         return False, "macos/defaults/ not found"
@@ -651,16 +648,7 @@ def step_defaults(dry_run=False, **_):
     section("4. macOS Defaults")
 
     if not IS_MACOS:
-        # Linux: load GNOME terminal profiles
-        dconf_file = REPO / "linux" / "gnome-terminal-profiles.dconf"
-        if has_cmd("dconf") and dconf_file.exists():
-            if dry_run:
-                info("[dry-run] dconf load terminal profiles")
-            else:
-                run(f'dconf load /org/gnome/terminal/legacy/profiles:/ < "{dconf_file}"')
-                info("loaded GNOME terminal profiles")
-        else:
-            warn("dconf not found or no profile file")
+        warn("macOS-only — Linux users: see the `dconf` step")
         return
 
     # --- Import plist files ---
@@ -1246,6 +1234,78 @@ def step_oqo(dry_run=False, **_):
         info(f"repo already present at {OQO_DIR}")
 
     symlink(OQO_DIR / "oqo.py", OQO_BIN, dry_run)
+
+
+# ── 14. GNOME dconf settings (Linux only) ───────────────────────────
+
+
+# Ordered list of (dconf path, filename) pairs dumped/loaded by backup/install.
+# Paths intentionally scoped to keep restores narrow and conflict-free.
+DCONF_PATHS = [
+    ("/org/gnome/desktop/interface/",                   "desktop-interface.dconf"),
+    ("/org/gnome/desktop/wm/keybindings/",              "desktop-wm-keybindings.dconf"),
+    ("/org/gnome/desktop/wm/preferences/",              "desktop-wm-preferences.dconf"),
+    ("/org/gnome/desktop/input-sources/",               "desktop-input-sources.dconf"),
+    ("/org/gnome/desktop/peripherals/",                 "desktop-peripherals.dconf"),
+    ("/org/gnome/mutter/keybindings/",                  "mutter-keybindings.dconf"),
+    ("/org/gnome/shell/keybindings/",                   "shell-keybindings.dconf"),
+    ("/org/gnome/shell/extensions/",                    "shell-extensions.dconf"),
+    ("/org/gnome/settings-daemon/plugins/media-keys/",  "media-keys.dconf"),
+    ("/org/gnome/settings-daemon/plugins/color/",       "settings-daemon-color.dconf"),
+    ("/org/gnome/terminal/legacy/profiles:/",           "gnome-terminal-profiles.dconf"),
+]
+
+
+def _check_dconf():
+    if IS_MACOS:
+        return False, "dconf is Linux-only"
+    if not has_cmd("dconf"):
+        return True, "dconf binary missing"
+    dconf_dir = REPO / "linux" / "dconf"
+    if not dconf_dir.exists():
+        return False, "linux/dconf/ not found"
+    present = [f for _, f in DCONF_PATHS
+               if (dconf_dir / f).exists() and (dconf_dir / f).stat().st_size > 0]
+    if not present:
+        return False, "no dconf files present"
+    return True, f"{len(present)} dconf subtree(s) to load"
+
+
+@step("dconf", "14. GNOME dconf settings (Linux only)", check=_check_dconf)
+def step_dconf(dry_run=False, **_):
+    section("14. GNOME dconf Settings")
+
+    if IS_MACOS:
+        warn("dconf is Linux-only")
+        return
+
+    if not has_cmd("dconf"):
+        warn("dconf not installed — skipping")
+        return
+
+    dconf_dir = REPO / "linux" / "dconf"
+    if not dconf_dir.exists():
+        warn(f"{dconf_dir} not found — nothing to load")
+        return
+
+    loaded = skipped = failed = 0
+    for path, filename in DCONF_PATHS:
+        src = dconf_dir / filename
+        if not src.exists() or src.stat().st_size == 0:
+            skipped += 1
+            continue
+        if dry_run:
+            info(f"[dry-run] dconf load {path} < {filename}")
+            loaded += 1
+            continue
+        rc, _ = run(f'dconf load "{path}" < "{src}"')
+        if rc == 0:
+            info(f"loaded {path}")
+            loaded += 1
+        else:
+            error(f"failed: {path}")
+            failed += 1
+    info(f"{loaded} loaded, {skipped} skipped (missing/empty), {failed} failed")
 
 
 # ══════════════════════════════════════════════════════════════════════

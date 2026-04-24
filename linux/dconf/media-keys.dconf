@@ -1,0 +1,31 @@
+[/]
+control-center=['<Super>comma']
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/']
+home=@as []
+logout=@as []
+screensaver=@as []
+
+[custom-keybindings/custom0]
+binding='<Super>g'
+command='toggle_app google-chrome'
+name='toggle_app google-chrome'
+
+[custom-keybindings/custom1]
+binding='<Super>b'
+command='toggle_app gedit'
+name='toggle_app gedit'
+
+[custom-keybindings/custom2]
+binding='<Super>o'
+command='toggle_app obsidian'
+name='toggle_app obsidian'
+
+[custom-keybindings/custom3]
+binding='<Super>e'
+command='toggle_app nautilus'
+name='toggle_app nautilus'
+
+[custom-keybindings/custom4]
+binding='<Super>Return'
+command='toggle_app ptyxis'
+name='toggle_app ptyxis'

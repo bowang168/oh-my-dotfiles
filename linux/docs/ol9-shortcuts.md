@@ -82,12 +82,15 @@ X11 sessions don't need this — `xdotool` + `wmctrl` handle it.
 | `Super+[` | Volume up |
 | `Super+/` | Volume down |
 
-## Restore shortcuts
+## Backup / restore shortcuts
+
+Custom shortcuts + built-in WM/Shell keybindings + GNOME Tweaks settings are
+all captured by the `dconf` step in `backup.py` / `install.py`:
 
 ```bash
-# Custom shortcuts are stored in dconf. To export:
-dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > custom-shortcuts.dconf
-
-# To restore:
-dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ < custom-shortcuts.dconf
+python3 backup.py  --only dconf    # snapshot current dconf subtrees into linux/dconf/
+python3 install.py --only dconf    # restore dconf subtrees onto this machine
 ```
+
+The list of subtrees is `DCONF_PATHS` in both scripts. Dumps live in
+`linux/dconf/*.dconf` — one file per subtree for diff-friendly reviews.

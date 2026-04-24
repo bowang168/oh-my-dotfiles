@@ -1,0 +1,4 @@
+[/]
+mru-sources=[('xkb', 'us')]
+show-all-sources=false
+sources=[('xkb', 'us'), ('xkb', 'cn+altgr-pinyin')]

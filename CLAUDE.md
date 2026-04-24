@@ -34,6 +34,7 @@ oh-my-dotfiles/
 │   ├── shortcuts_list.txt
 │   └── docs/            # Setup guides
 ├── linux/               # Linux-specific (kitty, GNOME, systemd)
+│   └── dconf/           # GNOME dconf subtree dumps (keybindings, tweaks, terminal profiles)
 ├── install.py           # Restore configs to system (symlink + import)
 ├── backup.py            # Snapshot system configs into repo
 └── ollama_models.txt    # Ollama model list for restore
@@ -52,7 +53,8 @@ oh-my-dotfiles/
 | `brew` | `brew` | Brewfile install / dump |
 | `configs` | `configs` | Symlink shared configs to ~ |
 | `omz` | `omz` | Oh-my-zsh plugins |
-| `defaults` | `defaults` | macOS plist defaults import/export |
+| `defaults` | `defaults` | macOS plist defaults import/export (macOS only) |
+| `dconf` | `dconf` | GNOME dconf subtrees: keybindings, tweaks, terminal profiles (Linux only) |
 | `services` | `services` | Automator workflows |
 | `fonts` | — | Font installation |
 | `hide_folders` | — | Hide ~/Public etc. on macOS |

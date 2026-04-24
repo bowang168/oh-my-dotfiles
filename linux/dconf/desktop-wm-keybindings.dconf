@@ -1,0 +1,4 @@
+[/]
+close=['<Super>x']
+maximize=@as []
+toggle-maximized=['<Super>f']

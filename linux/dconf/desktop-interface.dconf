@@ -1,0 +1,6 @@
+[/]
+clock-show-weekday=true
+color-scheme='prefer-dark'
+font-antialiasing='rgba'
+gtk-key-theme='Emacs'
+monospace-font-name='Maple Mono NF 10'

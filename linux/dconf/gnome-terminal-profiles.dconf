@@ -1,6 +1,3 @@
-# GNOME Terminal profiles with Catppuccin themes
-# Restore: dconf load /org/gnome/terminal/legacy/profiles:/ < gnome-terminal-profiles.dconf
-
 [/]
 default='catppuccin-mocha'
 list=['b1dcc9dd-5262-4d8d-a863-c897e6d979b9', 'catppuccin-mocha', 'catppuccin-latte']

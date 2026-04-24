@@ -236,26 +236,15 @@ def step_configs(dry_run=False, **_):
                   REPO / "linux" / "bin" / "toggle_app", dry_run)
 
 
-# ── 3. macOS defaults / GNOME terminal ───────────────────────────────
+# ── 3. macOS defaults (macOS only) ────────────────────────────────────
 
 
-@step("defaults", "3. macOS defaults / GNOME terminal profiles")
+@step("defaults", "3. macOS defaults (system preferences)")
 def step_defaults(dry_run=False, **_):
     section("3. System Preferences")
 
     if not IS_MACOS:
-        # Linux: dump GNOME terminal profiles
-        if has_cmd("dconf"):
-            dst = REPO / "linux" / "gnome-terminal-profiles.dconf"
-            if dry_run:
-                info("[dry-run] dconf dump terminal profiles")
-            else:
-                rc, stdout = run("dconf dump /org/gnome/terminal/legacy/profiles:/")
-                if rc == 0 and stdout:
-                    dst.write_text(stdout)
-                    info("gnome-terminal-profiles.dconf")
-        else:
-            warn("dconf not found")
+        warn("macOS-only — Linux users: see the `dconf` step")
         return
 
     # macOS: export defaults domains
@@ -418,6 +407,66 @@ def step_shortcuts(dry_run=False, **_):
         info(f"recorded {count} shortcuts")
     else:
         warn("shortcuts command not available or empty")
+
+
+# ── 8. GNOME dconf settings (Linux only) ──────────────────────────────
+
+
+# Ordered list of (dconf path, filename) pairs. Must stay in sync with
+# install.py's DCONF_PATHS so backup + restore cover the same subtrees.
+DCONF_PATHS = [
+    ("/org/gnome/desktop/interface/",                   "desktop-interface.dconf"),
+    ("/org/gnome/desktop/wm/keybindings/",              "desktop-wm-keybindings.dconf"),
+    ("/org/gnome/desktop/wm/preferences/",              "desktop-wm-preferences.dconf"),
+    ("/org/gnome/desktop/input-sources/",               "desktop-input-sources.dconf"),
+    ("/org/gnome/desktop/peripherals/",                 "desktop-peripherals.dconf"),
+    ("/org/gnome/mutter/keybindings/",                  "mutter-keybindings.dconf"),
+    ("/org/gnome/shell/keybindings/",                   "shell-keybindings.dconf"),
+    ("/org/gnome/shell/extensions/",                    "shell-extensions.dconf"),
+    ("/org/gnome/settings-daemon/plugins/media-keys/",  "media-keys.dconf"),
+    ("/org/gnome/settings-daemon/plugins/color/",       "settings-daemon-color.dconf"),
+    ("/org/gnome/terminal/legacy/profiles:/",           "gnome-terminal-profiles.dconf"),
+]
+
+
+@step("dconf", "8. GNOME dconf settings (Linux only)")
+def step_dconf(dry_run=False, **_):
+    section("8. GNOME dconf Settings")
+
+    if IS_MACOS:
+        warn("dconf is Linux-only")
+        return
+
+    if not has_cmd("dconf"):
+        warn("dconf not found")
+        return
+
+    dconf_dir = REPO / "linux" / "dconf"
+    if not dry_run:
+        dconf_dir.mkdir(parents=True, exist_ok=True)
+
+    dumped = empty = failed = 0
+    for path, filename in DCONF_PATHS:
+        dst = dconf_dir / filename
+        if dry_run:
+            info(f"[dry-run] dconf dump {path} -> linux/dconf/{filename}")
+            dumped += 1
+            continue
+        rc, stdout = run(f'dconf dump "{path}"')
+        if rc != 0:
+            error(f"failed: {path}")
+            failed += 1
+            continue
+        # Skip writing (and remove any stale file) when the subtree is empty.
+        if not stdout.strip() or stdout.strip() == "[/]":
+            if dst.exists():
+                dst.unlink()
+            empty += 1
+            continue
+        dst.write_text(stdout + "\n" if not stdout.endswith("\n") else stdout)
+        info(filename)
+        dumped += 1
+    info(f"{dumped} dumped, {empty} empty (skipped), {failed} failed")
 
 
 # ══════════════════════════════════════════════════════════════════════
