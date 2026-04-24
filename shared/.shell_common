@@ -91,6 +91,45 @@ else
 fi
 
 # ----------------------------------------------------------------------------
+# Personal AI Brain — VeraCrypt encrypted container on /u01 (cross-OS)
+#   Container  : /u01/veracrypt/vault-brain.hc
+#   Mountpoint : /u01/veracrypt/vault-brain/
+#   Password   : ~/.ssh/veracrypt.pwd (chmod 0400)
+#   Contents   : Personal_AI_Brain/, .Personal_AI_Brain_Media/, .Personal_AI_Brain_Qdrant/
+# ----------------------------------------------------------------------------
+
+pab-mount() {
+    if mount | grep -q " /u01/veracrypt/vault-brain "; then
+        echo "PAB already mounted"; return 0
+    fi
+    sudo veracrypt -t --non-interactive --stdin \
+        /u01/veracrypt/vault-brain.hc /u01/veracrypt/vault-brain \
+        < ~/.ssh/veracrypt.pwd && echo "PAB: mounted at /u01/veracrypt/vault-brain"
+}
+
+pab-umount() {
+    sudo veracrypt -d /u01/veracrypt/vault-brain && echo "PAB: unmounted"
+}
+
+pab-status() {
+    if mount | grep -q " /u01/veracrypt/vault-brain "; then
+        echo "PAB: OPEN (mounted at /u01/veracrypt/vault-brain)"
+        df -h /u01/veracrypt/vault-brain 2>/dev/null | tail -1 \
+            | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
+    else
+        echo "PAB: CLOSED"
+    fi
+}
+
+# Strip macOS AppleDouble noise (._*, .DS_Store) from the PAB mount
+pab-clean() {
+    if ! mount | grep -q " /u01/veracrypt/vault-brain "; then
+        echo "PAB not mounted" >&2; return 1
+    fi
+    macclean /u01/veracrypt/vault-brain
+}
+
+# ----------------------------------------------------------------------------
 # Listing — eza (preferred) with fallback to system ls
 #   eza: https://github.com/eza-community/eza
 # ----------------------------------------------------------------------------
