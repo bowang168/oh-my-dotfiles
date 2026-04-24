@@ -19,6 +19,7 @@ fd-find
 fzf
 git
 git-delta
+glow
 neovim
 ripgrep
 starship
