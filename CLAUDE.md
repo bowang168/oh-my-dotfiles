@@ -58,6 +58,7 @@ oh-my-dotfiles/
 | `hide_folders` | — | Hide ~/Public etc. on macOS |
 | `ollama` | `ollama` | Ollama model pull / list |
 | `keyd` | — | Build keyd + deploy Linux config |
+| `yazi` | — | Download yazi + ya binaries from GitHub release to `~/.local/bin/` (Linux only; macOS uses Brewfile) |
 | `flatpak` | — | Add Flathub remote + install apps from `linux/flatpaks.txt` (Linux only) |
 | `clihelp` | — | Install tldr via pip |
 | — | `shortcuts` | Export macOS keyboard shortcuts |

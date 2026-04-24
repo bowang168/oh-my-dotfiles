@@ -21,6 +21,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -1036,7 +1037,74 @@ def step_keyd(dry_run=False, **_):
         info("keyd.service enabled + reloaded")
 
 
-# ── 10. Flatpak apps (Linux only) ───────────────────────────────────
+# ── 10. Yazi binary (Linux only; macOS uses Homebrew) ───────────────
+
+
+YAZI_URL = (
+    "https://github.com/sxyazi/yazi/releases/latest/download/"
+    "yazi-x86_64-unknown-linux-gnu.zip"
+)
+
+
+def _check_yazi():
+    if IS_MACOS:
+        return False, "yazi on macOS is installed via Homebrew (Brewfile)"
+    missing = [b for b in ("yazi", "ya") if not (HOME / ".local" / "bin" / b).exists()
+               and not has_cmd(b)]
+    if missing:
+        return True, f"missing binaries: {', '.join(missing)}"
+    return False, "yazi + ya already installed"
+
+
+@step("yazi", "10. Yazi file manager (Linux binary)", check=_check_yazi)
+def step_yazi(dry_run=False, **_):
+    section("10. Yazi (Linux binary)")
+
+    if IS_MACOS:
+        warn("yazi on macOS comes from Homebrew — see Brewfile")
+        return
+
+    bin_dir = HOME / ".local" / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    already = all((bin_dir / b).exists() or has_cmd(b) for b in ("yazi", "ya"))
+    if already:
+        info("yazi + ya already present")
+        return
+
+    if dry_run:
+        info(f"[dry-run] curl -L {YAZI_URL} | unzip -> {bin_dir}/{{yazi,ya}}")
+        return
+
+    if not has_cmd("unzip"):
+        error("unzip not found — install it (sudo dnf install unzip)")
+        return
+
+    with tempfile.TemporaryDirectory() as td:
+        zip_path = Path(td) / "yazi.zip"
+        rc = run_visible(f'curl -fL --output "{zip_path}" "{YAZI_URL}"')
+        if rc != 0 or not zip_path.exists():
+            error("yazi download failed")
+            return
+        rc = run_visible(f'unzip -q "{zip_path}" -d "{td}"')
+        if rc != 0:
+            error("yazi unzip failed")
+            return
+        installed = []
+        for name in ("yazi", "ya"):
+            matches = list(Path(td).rglob(name))
+            matches = [m for m in matches if m.is_file() and os.access(m, os.X_OK)]
+            if not matches:
+                error(f"{name} not found in archive")
+                continue
+            dst = bin_dir / name
+            shutil.copy2(matches[0], dst)
+            dst.chmod(0o755)
+            installed.append(name)
+        if installed:
+            info(f"installed to {bin_dir}: {', '.join(installed)}")
+
+
+# ── 11. Flatpak apps (Linux only) ───────────────────────────────────
 
 
 def _flatpak_apps():
@@ -1071,9 +1139,9 @@ def _check_flatpak():
     return False, f"flathub + {len(apps)} app(s) already installed"
 
 
-@step("flatpak", "10. Flatpak apps (Linux only)", check=_check_flatpak)
+@step("flatpak", "11. Flatpak apps (Linux only)", check=_check_flatpak)
 def step_flatpak(dry_run=False, **_):
-    section("10. Flatpak Apps")
+    section("11. Flatpak Apps")
 
     if IS_MACOS:
         warn("flatpak is Linux-only")
@@ -1121,7 +1189,7 @@ def step_flatpak(dry_run=False, **_):
         error("flatpak install failed")
 
 
-# ── 11. Chinese CLI help ─────────────────────────────────────────────
+# ── 12. Chinese CLI help ─────────────────────────────────────────────
 
 
 def _check_clihelp():
@@ -1130,9 +1198,9 @@ def _check_clihelp():
     return True, "tldr not installed"
 
 
-@step("clihelp", "11. Chinese CLI help (tldr)", check=_check_clihelp)
+@step("clihelp", "12. Chinese CLI help (tldr)", check=_check_clihelp)
 def step_cli_help(dry_run=False, **_):
-    section("10. Chinese CLI Help")
+    section("12. Chinese CLI Help")
 
     if has_cmd("tldr"):
         info("tldr already installed")
