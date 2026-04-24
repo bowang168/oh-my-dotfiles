@@ -31,11 +31,15 @@ After editing `/etc/keyd/default.conf`, reload with `sudo keyd reload`.
 | `Super+f` | Toggle maximize |
 | `Super+r` | Unmaximize (restore) |
 | `Super+h` | Minimize |
-| `Super+w` | Close window |
+| `Super+x` / `Super+w` | Close window |
+| `Super+Left` / `Super+[` | Tile left |
+| `Super+Right` / `Super+]` | Tile right |
 | `Super+d` | Show desktop |
 | `Super+e` | File manager |
 | `Super+Tab` | Switch applications |
 | `Super+,` / `Super+.` | Switch workspace left / right |
+| `Super+1` / `Super+2` | Switch to workspace 1 / 2 |
+| `Alt+Super+1` / `Alt+Super+2` | Move active window to workspace 1 / 2 |
 | `Super+3` | Maximize horizontally |
 | `Super+4` | Maximize vertically |
 | `Ctrl+Space` | Switch input source |
@@ -74,13 +78,6 @@ X11 sessions don't need this — `xdotool` + `wmctrl` handle it.
 | `Super+u` | `[custom tool] --no-open` | Quick open without opening |
 | `Super+y` | `[custom tool] --one-value` | Quick open single value |
 | `Super+o` | `[custom tool] --raw-capture` | Quick open raw capture |
-
-## Volume
-
-| Shortcut | Action |
-|----------|--------|
-| `Super+[` | Volume up |
-| `Super+/` | Volume down |
 
 ## Backup / restore shortcuts
 
