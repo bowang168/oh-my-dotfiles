@@ -1,0 +1,53 @@
+"$schema" = "https://yazi-rs.github.io/schemas/yazi.json"
+
+[mgr]
+ratio          = [1, 3, 4]
+show_hidden    = false
+show_symlink   = true
+sort_by        = "natural"
+sort_sensitive = false
+sort_reverse   = false
+sort_dir_first = true
+linemode       = "size"
+
+[preview]
+wrap             = "no"
+tab_size         = 2
+max_width        = 900
+max_height       = 1200
+image_delay      = 30
+image_filter     = "triangle"
+image_quality    = 80
+sixel_fraction   = 15
+ueberzug_scale   = 1
+ueberzug_offset  = [0, 0, 0, 0]
+
+[plugin]
+prepend_previewers = [
+  { name = "*.md",       run = "glow" },
+  { name = "*.markdown", run = "glow" },
+]
+
+[opener]
+edit = [
+  { run = '${EDITOR:-nvim} "$@"', desc = "$EDITOR", block = true, for = "unix" },
+]
+open = [
+  { run = 'xdg-open "$@"', desc = "Open", orphan = true, for = "linux" },
+]
+reveal = [
+  { run = 'xdg-open "$(dirname "$1")"', desc = "Reveal in Files", orphan = true, for = "linux" },
+]
+
+[open]
+rules = [
+  { mime = "text/*",                 use = ["edit", "open"] },
+  { mime = "image/*",                use = ["open"] },
+  { mime = "video/*",                use = ["open"] },
+  { mime = "audio/*",                use = ["open"] },
+  { mime = "application/pdf",        use = ["open"] },
+  { mime = "application/*zip",       use = ["open"] },
+  { mime = "application/x-*tar",     use = ["open"] },
+  { mime = "inode/directory",        use = ["open"] },
+  { mime = "*",                      use = ["open", "reveal"] },
+]

@@ -452,6 +452,10 @@ def _check_configs():
     targets += [
         (shared / "starship.toml", HOME / ".config" / "starship.toml"),
         (shared / "bin" / "theme", HOME / ".local" / "bin" / "theme"),
+        (shared / "yazi" / "yazi.toml", HOME / ".config" / "yazi" / "yazi.toml"),
+        (shared / "yazi" / "package.toml", HOME / ".config" / "yazi" / "package.toml"),
+        (shared / "yazi" / "plugins" / "glow.yazi",
+         HOME / ".config" / "yazi" / "plugins" / "glow.yazi"),
     ]
     if IS_MACOS:
         targets += [
@@ -493,6 +497,14 @@ def step_configs(dry_run=False, **_):
 
     # --- Starship prompt ---
     symlink(shared / "starship.toml", HOME / ".config" / "starship.toml", dry_run)
+
+    # --- Yazi (file manager) config + pinned plugins ---
+    symlink(shared / "yazi" / "yazi.toml",
+            HOME / ".config" / "yazi" / "yazi.toml", dry_run)
+    symlink(shared / "yazi" / "package.toml",
+            HOME / ".config" / "yazi" / "package.toml", dry_run)
+    symlink(shared / "yazi" / "plugins" / "glow.yazi",
+            HOME / ".config" / "yazi" / "plugins" / "glow.yazi", dry_run)
 
     # --- Catppuccin zsh colours ---
     for f in ["mocha.zsh", "latte.zsh"]:
