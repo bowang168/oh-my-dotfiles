@@ -1264,6 +1264,14 @@ def print_manual_steps():
     print("  6. Configure input method (if applicable)")
     print("  7. Open a new terminal or run: exec zsh")
 
+    if not IS_MACOS:
+        print(f"\n{BOLD}{YELLOW}Linux manual steps:{RESET}")
+        print("  - Install 'Window Calls' GNOME Shell extension (required by")
+        print("    toggle_app on Wayland; X11 sessions don't need it):")
+        print("      https://extensions.gnome.org/extension/4724/window-calls/")
+        print("      UUID: window-calls@domandoman.xyz")
+        print("    Log out/in after install, then enable in the Extensions app.")
+
     if IS_MACOS:
         print(f"\n{BOLD}{YELLOW}macOS settings that require manual confirmation:{RESET}")
         print("  Accessibility (System Settings > Accessibility > Display):")

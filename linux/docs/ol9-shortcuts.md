@@ -44,6 +44,26 @@ After editing `/etc/keyd/default.conf`, reload with `sudo keyd reload`.
 
 ## Custom Shortcuts (toggle_app)
 
+### Wayland prerequisite: Window Calls extension
+
+On a Wayland session, `toggle_app` can't inspect or focus windows via
+`xdotool`/`wmctrl`. It uses the **Window Calls** GNOME Shell extension over
+D-Bus instead. Without it, every invocation just spawns a new instance of the
+target app (no toggle, no focus).
+
+- Install: <https://extensions.gnome.org/extension/4724/window-calls/>
+- UUID: `window-calls@domandoman.xyz`
+- After installing, log out/in (or restart GNOME Shell) and enable it in the
+  Extensions app. Verify with:
+  ```bash
+  gdbus call --session --dest org.gnome.Shell \
+      --object-path /org/gnome/Shell/Extensions/Windows \
+      --method org.gnome.Shell.Extensions.Windows.List
+  ```
+  Should return a JSON payload, not `UnknownMethod`.
+
+X11 sessions don't need this — `xdotool` + `wmctrl` handle it.
+
 | Shortcut | Command | Description |
 |----------|---------|-------------|
 | `Super+Return` | `toggle_app gnome-terminal` | Toggle terminal |
