@@ -18,7 +18,7 @@ window-padding-y = 4
 window-decoration = true
 # AeroSpace 环境下用 hidden 避免 native tabs 冲突
 # 用 ⌘D/⌘⇧D 分屏替代 tab，⌘N 新窗口由 AeroSpace tiling
-macos-titlebar-style = hidden
+#macos-titlebar-style = hidden
 window-save-state = always
 confirm-close-surface = false
 
