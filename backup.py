@@ -517,7 +517,7 @@ examples:
     print("  - ~/.ssh/              (SSH keys)")
     print("  - ~/.bashrc_private    (API keys)")
     print("  - ~/.claude/           (Claude Code config, memories, API keys)")
-    print("  - ~/d/vault.sparsebundle  (encrypted vault: Personal AI Brain + Media + Qdrant)")
+    print("  - ~/d/pab/pab.sparsebundle  (encrypted PAB: Personal AI Brain + Media + Qdrant)")
     print(f"\n  Next: cd {REPO} && git diff && git add -A && git commit -m 'backup' && git push")
 
 

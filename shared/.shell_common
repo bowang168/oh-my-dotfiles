@@ -30,18 +30,6 @@ if [[ "$OS_TYPE" == "Darwin" ]]; then
 
     # Quick Look from terminal
     ql() { qlmanage -p "$*" >& /dev/null; }
-
-    # Encrypted vault (macOS sparse bundle, AES-256, 4GB APFS)
-    alias vault-open='hdiutil attach ~/d/vault.sparsebundle -mountpoint ~/d/encrypted-backup'
-    alias vault-close='hdiutil detach ~/d/encrypted-backup'
-    vault-status() {
-        if mount | grep -q "encrypted-backup"; then
-            echo "vault: OPEN (mounted at ~/d/encrypted-backup)"
-            df -h ~/d/encrypted-backup | tail -1 | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
-        else
-            echo "vault: CLOSED"
-        fi
-    }
 else
     # --- Oracle Linux 9 ---
     alias rm='rm -iv --preserve-root'
@@ -91,43 +79,66 @@ else
 fi
 
 # ----------------------------------------------------------------------------
-# Personal AI Brain — VeraCrypt encrypted container on /u01 (cross-OS)
-#   Container  : /u01/veracrypt/vault-brain.hc
-#   Mountpoint : /u01/veracrypt/vault-brain/
-#   Password   : ~/.ssh/veracrypt.pwd (chmod 0400)
-#   Contents   : Personal_AI_Brain/, .Personal_AI_Brain_Media/, .Personal_AI_Brain_Qdrant/
+# Personal AI Brain (PAB) — encrypted store of personal knowledge base
+#   macOS : sparse bundle ~/d/pab/pab.sparsebundle  → ~/d/pab/pab_mount
+#   Linux : VeraCrypt /u01/veracrypt/vault-brain.hc → /u01/veracrypt/vault-brain
+#   Linux password : ~/.ssh/veracrypt.pwd (chmod 0400)
+#   Contents       : Personal_AI_Brain/, .Personal_AI_Brain_Media/, .Personal_AI_Brain_Qdrant/
 # ----------------------------------------------------------------------------
 
-pab-mount() {
-    if mount | grep -q " /u01/veracrypt/vault-brain "; then
-        echo "PAB already mounted"; return 0
-    fi
-    sudo veracrypt -t --non-interactive --stdin \
-        /u01/veracrypt/vault-brain.hc /u01/veracrypt/vault-brain \
-        < ~/.ssh/veracrypt.pwd && echo "PAB: mounted at /u01/veracrypt/vault-brain"
-}
+if [[ "$OS_TYPE" == "Darwin" ]]; then
+    alias pab-mount='hdiutil attach ~/d/pab/pab.sparsebundle -mountpoint ~/d/pab/pab_mount'
+    alias pab-umount='hdiutil detach ~/d/pab/pab_mount'
 
-pab-umount() {
-    sudo veracrypt -d /u01/veracrypt/vault-brain && echo "PAB: unmounted"
-}
+    pab-status() {
+        if mount | grep -q "pab_mount"; then
+            echo "PAB: OPEN (mounted at ~/d/pab/pab_mount)"
+            df -h ~/d/pab/pab_mount 2>/dev/null | tail -1 \
+                | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
+        else
+            echo "PAB: CLOSED"
+        fi
+    }
 
-pab-status() {
-    if mount | grep -q " /u01/veracrypt/vault-brain "; then
-        echo "PAB: OPEN (mounted at /u01/veracrypt/vault-brain)"
-        df -h /u01/veracrypt/vault-brain 2>/dev/null | tail -1 \
-            | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
-    else
-        echo "PAB: CLOSED"
-    fi
-}
+    # Strip macOS AppleDouble noise (._*, .DS_Store) from the PAB mount
+    pab-clean() {
+        if ! mount | grep -q "pab_mount"; then
+            echo "PAB not mounted" >&2; return 1
+        fi
+        macclean ~/d/pab/pab_mount
+    }
+else
+    pab-mount() {
+        if mount | grep -q " /u01/veracrypt/vault-brain "; then
+            echo "PAB already mounted"; return 0
+        fi
+        sudo veracrypt -t --non-interactive --stdin \
+            /u01/veracrypt/vault-brain.hc /u01/veracrypt/vault-brain \
+            < ~/.ssh/veracrypt.pwd && echo "PAB: mounted at /u01/veracrypt/vault-brain"
+    }
 
-# Strip macOS AppleDouble noise (._*, .DS_Store) from the PAB mount
-pab-clean() {
-    if ! mount | grep -q " /u01/veracrypt/vault-brain "; then
-        echo "PAB not mounted" >&2; return 1
-    fi
-    macclean /u01/veracrypt/vault-brain
-}
+    pab-umount() {
+        sudo veracrypt -d /u01/veracrypt/vault-brain && echo "PAB: unmounted"
+    }
+
+    pab-status() {
+        if mount | grep -q " /u01/veracrypt/vault-brain "; then
+            echo "PAB: OPEN (mounted at /u01/veracrypt/vault-brain)"
+            df -h /u01/veracrypt/vault-brain 2>/dev/null | tail -1 \
+                | awk '{print "  disk: " $3 " / " $2 " (" $5 " used)"}'
+        else
+            echo "PAB: CLOSED"
+        fi
+    }
+
+    # Strip macOS AppleDouble noise (._*, .DS_Store) from the PAB mount
+    pab-clean() {
+        if ! mount | grep -q " /u01/veracrypt/vault-brain "; then
+            echo "PAB not mounted" >&2; return 1
+        fi
+        macclean /u01/veracrypt/vault-brain
+    }
+fi
 
 # ----------------------------------------------------------------------------
 # Listing — eza (preferred) with fallback to system ls
