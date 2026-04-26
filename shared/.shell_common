@@ -14,7 +14,8 @@ if [[ "$OS_TYPE" == "Darwin" ]]; then
     # --- macOS only ---
     alias cat="bat --theme auto:system --theme-dark default --theme-light GitHub"
     alias geany="env LANG=zh_CN.UTF-8 LANGUAGE=zh_CN LC_MESSAGES=zh_CN.UTF-8 /Applications/Geany.app/Contents/MacOS/geany"
-    alias rm='rm -iv'
+    alias rm='/usr/bin/trash'   # 走废纸篓，可恢复；要永久删用 \rm 或 rrm
+    alias rrm='/bin/rm'
     alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
     alias vpnui=/opt/cisco/secureclient/bin/vpnui
     alias typora="open -a typora"
