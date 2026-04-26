@@ -31,6 +31,10 @@ shell-integration-features = no-cursor
 # Metal 渲染，M3 Pro 直接拉满
 window-vsync = true
 
+# === 透明度 / 模糊 ===
+background-opacity = 0.9
+background-blur = 20
+
 # === 行为 ===
 copy-on-select = clipboard
 mouse-hide-while-typing = true
