@@ -11,7 +11,7 @@ sort_dir_first = true
 linemode       = "size"
 
 [preview]
-wrap             = "no"
+wrap             = "yes"
 tab_size         = 2
 max_width        = 900
 max_height       = 1200
@@ -33,10 +33,12 @@ edit = [
   { run = '${EDITOR:-nvim} "$@"', desc = "$EDITOR", block = true, for = "unix" },
 ]
 open = [
-  { run = 'xdg-open "$@"', desc = "Open", orphan = true, for = "linux" },
+  { run = 'open "$@"',     desc = "Open",     orphan = true, for = "macos" },
+  { run = 'xdg-open "$@"', desc = "Open",     orphan = true, for = "linux" },
 ]
 reveal = [
-  { run = 'xdg-open "$(dirname "$1")"', desc = "Reveal in Files", orphan = true, for = "linux" },
+  { run = 'open -R "$1"',                    desc = "Reveal in Finder", orphan = true, for = "macos" },
+  { run = 'xdg-open "$(dirname "$1")"',      desc = "Reveal in Files",  orphan = true, for = "linux" },
 ]
 
 [open]
