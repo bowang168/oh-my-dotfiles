@@ -300,6 +300,7 @@ alias cl='claude'
 alias clr='claude --resume'
 alias cld='claude --dangerously-skip-permissions'
 alias cldr='claude --dangerously-skip-permissions --resume'
+alias claude-techdb='claude --mcp-config ~/.claude/mcp-techdb.json'
 
 # Backup Claude Code config → ~/Downloads/claude-backup.zip
 clbackup() {
